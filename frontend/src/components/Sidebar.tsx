@@ -1,0 +1,77 @@
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Users,
+  Settings
+} from "lucide-react";
+
+import logo from "../public/icon.png";
+
+export function Sidebar() {
+  return (
+    <aside className="w-72 h-screen bg-white border-r border-zinc-200 flex flex-col justify-between">
+      
+      {/* TOPO */}
+      <div>
+        <div className="flex items-center gap-3 px-6 py-6">
+          <img
+            src={logo}
+            alt="Logo"
+            className="w-10 h-10 rounded-xl shadow-sm"
+          />
+
+          <div className="flex flex-col">
+            <span className="font-semibold text-zinc-800 text-lg">
+              Chat2Order
+            </span>
+
+            <span className="text-xs text-zinc-500">
+              v1.0 MVP
+            </span>
+          </div>
+        </div>
+
+        {/* MENU */}
+        <nav className="mt-4 px-3 flex flex-col gap-1">
+          
+          <button className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-100 text-zinc-900 font-medium transition">
+            <LayoutDashboard size={20} />
+            Dashboard
+          </button>
+
+          <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition">
+            <ShoppingCart size={20} />
+            Pedidos
+          </button>
+
+          <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition">
+            <Users size={20} />
+            Clientes
+          </button>
+
+          <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition">
+            <Settings size={20} />
+            Configurações
+          </button>
+        </nav>
+      </div>
+
+      {/* FOOTER */}
+      <div className="border-t border-zinc-200 p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-zinc-200" />
+
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">
+              César Danilo
+            </span>
+
+            <span className="text-xs text-zinc-500">
+              Administrador
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
