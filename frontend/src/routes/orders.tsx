@@ -8,6 +8,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { CirclePlus, SearchIcon } from 'lucide-react'
+import { TableOrders } from '@/components/TableOrders'
 
 export const Route = createFileRoute('/orders')({
   component: RouteComponent,
@@ -18,7 +19,7 @@ function RouteComponent() {
     <div className='w-screen'>
       <Header title={"Pedidos"} subtitle={"Todos os pedidos importados"} />
       <div className='px-56 py-10'>
-        <div className='filters flex justify-around items-center'>
+        <div className='filters flex justify-between items-center'>
           <InputGroup className="w-[390px]">
             <InputGroupInput placeholder="Buscar por cliente ou ID" />
             <InputGroupAddon>
@@ -39,8 +40,10 @@ function RouteComponent() {
             <CirclePlus />
             Novo pedido
           </Button>
-
         </div>
+      </div>
+      <div className='px-56'>
+        <TableOrders />
       </div>
     </div>
   )
