@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { MessageCircle } from "lucide-react";
 
 export function TableOrders() {
 
@@ -22,7 +23,7 @@ export function TableOrders() {
     {
       id: 2,
       customer: "Maria Oliveira",
-      origin: "Instagram",
+      origin: "WhatsApp",
       status: "Concluído",
       total: "R$ 1.250,00",
       date: "19/05/2026",
@@ -30,7 +31,7 @@ export function TableOrders() {
     {
       id: 3,
       customer: "Lucas Almeida",
-      origin: "Site",
+      origin: "WhatsApp",
       status: "Cancelado",
       total: "R$ 89,90",
       date: "18/05/2026",
@@ -46,14 +47,14 @@ export function TableOrders() {
     {
       id: 5,
       customer: "Rafael Martins",
-      origin: "Facebook",
+      origin: "WhatsApp",
       status: "Pago",
       total: "R$ 2.430,00",
       date: "16/05/2026",
     },
   ];
 
-  const statusColors: Record<string, string>= {
+  const statusColors: Record<string, string> = {
     Pendente: "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
     Concluído: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
     Cancelado: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
@@ -67,7 +68,7 @@ export function TableOrders() {
         <TableHeader>
           <TableRow>
             <TableHead className="py-3 px-6 text-left text-zinc-500">Cliente</TableHead>
-            <TableHead className="py-3 px-6 text-left text-zinc-500">origen</TableHead>
+            <TableHead className="py-3 px-6 text-left text-zinc-500">Origem</TableHead>
             <TableHead className="px-6 py-3 text-center text-zinc-500">Status</TableHead>
             <TableHead className="px-6 py-3 text-end text-zinc-500">Total</TableHead>
             <TableHead className="px-6 py-3 text-end text-zinc-500">Data</TableHead>
@@ -87,7 +88,12 @@ export function TableOrders() {
                     </span>
                   </div>
                 </TableCell>
-                <TableCell className="px-6 py-3 text-left">{order.origin}</TableCell>
+                <TableCell className="px-6 py-3 text-left ">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle size={16} className="text-green-500" />
+                    <span className="text-zinc-500 text-xs">{order.origin}</span>
+                  </div>
+                </TableCell>
                 <TableCell className="px-6 py-3 text-center">
                   <Badge className={statusColors[order.status]}>
                     {order.status}
