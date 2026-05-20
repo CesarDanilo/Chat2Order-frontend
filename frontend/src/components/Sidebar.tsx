@@ -2,8 +2,10 @@ import {
   LayoutDashboard,
   Users,
   Settings,
-  ShoppingBag
+  ShoppingBag,
 } from "lucide-react";
+
+import { Link } from "@tanstack/react-router";
 
 import logo from "../public/icon.png";
 
@@ -20,7 +22,7 @@ export function Sidebar() {
           />
 
           <div className="flex flex-col">
-            <span className="font-semibold text-zinc-800 ">
+            <span className="font-semibold text-zinc-800">
               Chat2Order
             </span>
 
@@ -31,30 +33,42 @@ export function Sidebar() {
         </div>
 
         <nav className="mt-4 px-3 flex flex-col gap-1">
-          
-          <button className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-100 text-zinc-900 font-medium transition text-sm">
+
+          <Link
+            to="/"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-100 text-zinc-900 font-medium transition text-sm"
+          >
             <LayoutDashboard size={20} />
             Dashboard
-          </button>
+          </Link>
 
-          <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition text-sm">
-            <ShoppingBag size={20}/>
+          <Link
+            to="/orders"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition text-sm"
+          >
+            <ShoppingBag size={20} />
             Pedidos
-          </button>
+          </Link>
 
-          <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition text-sm">
+          <Link
+            to="/users"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition text-sm"
+          >
             <Users size={20} />
             Usuários
-          </button>
+          </Link>
 
-          <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition text-sm">
+          <Link
+            to="/"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 hover:bg-zinc-100 transition text-sm"
+          >
             <Settings size={20} />
             Configurações
-          </button>
+          </Link>
+
         </nav>
       </div>
 
-      {/* FOOTER */}
       <div className="border-t border-zinc-200 p-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-zinc-200" />
