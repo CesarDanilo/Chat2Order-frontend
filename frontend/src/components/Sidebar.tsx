@@ -11,7 +11,7 @@ import logo from "../public/icon.png";
 
 export function Sidebar() {
   return (
-    <aside className="w-72 h-screen bg-white border-r border-zinc-200 flex flex-col justify-between">
+    <aside className="w-[280px] shrink-0 h-screen bg-white border-r border-zinc-200 flex flex-col justify-between">
       
       <div>
         <div className="flex items-center gap-3 px-6 py-6">
