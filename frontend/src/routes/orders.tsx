@@ -9,12 +9,19 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { CirclePlus, SearchIcon } from 'lucide-react'
 import { TableOrders } from '@/components/TableOrders'
+import { useState } from 'react'
 
 export const Route = createFileRoute('/orders')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
+  const [filter, setFilter] = useState<string>('Todos');
+
+  const handleFilter = (value: string) => {
+    setFilter(value);
+  }
+
   return (
     <div className='w-screen'>
       <Header title={"Pedidos"} subtitle={"Todos os pedidos importados"} />
@@ -27,12 +34,12 @@ function RouteComponent() {
             </InputGroupAddon>
           </InputGroup>
 
-          <Tabs defaultValue="Todos" className="w-[390px]">
+          <Tabs defaultValue="Todos" className="w-[390px]" onValueChange={handleFilter}>
             <TabsList>
               <TabsTrigger value="Todos" className="text-xs">Todos</TabsTrigger>
-              <TabsTrigger value="Pendentes" className="text-xs">Pendentes</TabsTrigger>
-              <TabsTrigger value="Concluídos" className="text-xs">Concluídos</TabsTrigger>
-              <TabsTrigger value="Cancelados" className="text-xs">Cancelados</TabsTrigger>
+              <TabsTrigger value="Pendente" className="text-xs">Pendentes</TabsTrigger>
+              <TabsTrigger value="Concluído" className="text-xs">Concluídos</TabsTrigger>
+              <TabsTrigger value="Cancelado" className="text-xs">Cancelados</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -43,7 +50,7 @@ function RouteComponent() {
         </div>
       </div>
       <div className='px-56'>
-        <TableOrders />
+        <TableOrders filter={filter} />
       </div>
     </div>
   )

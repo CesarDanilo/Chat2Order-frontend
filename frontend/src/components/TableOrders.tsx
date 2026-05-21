@@ -8,8 +8,22 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { MessageCircle } from "lucide-react";
+import { useMemo } from "react";
 
-export function TableOrders() {
+interface IOrderType {
+  id: number;
+  customer: string;
+  origin: string;
+  status: string;
+  total: string;
+  date: string;
+}
+
+interface IFilterType {
+  filter: string
+}
+
+export function TableOrders({ filter }: IFilterType) {
 
   const orders = [
     {
@@ -54,6 +68,11 @@ export function TableOrders() {
     },
   ];
 
+  const filteredOrders = useMemo(() =>{
+    return orders.filter((order) => {
+      return order.status === filter || filter === 'Todos'
+  })}, [filter])
+
   const statusColors: Record<string, string> = {
     Pendente: "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
     Concluído: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
@@ -76,7 +95,7 @@ export function TableOrders() {
         </TableHeader>
         <TableBody>
           {
-            orders.map((order, key) => (
+            filteredOrders.map((order, key) => (
               <TableRow key={key}>
                 <TableCell className="px-6 py-3">
                   <div className="flex flex-col text-start">
