@@ -1,63 +1,83 @@
-import { Header } from '@/components/Header'
-import { createFileRoute } from '@tanstack/react-router'
+import { Header } from "@/components/Header";
+import { TableOrders } from "@/components/TableOrders";
+
+import { createFileRoute } from "@tanstack/react-router";
+
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@/components/ui/input-group"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { CirclePlus, SearchIcon } from 'lucide-react'
-import { TableOrders } from '@/components/TableOrders'
-import { useState } from 'react'
+} from "@/components/ui/input-group";
 
-export const Route = createFileRoute('/orders')({
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { Button } from "@/components/ui/button";
+
+import { CirclePlus, SearchIcon } from "lucide-react";
+
+import { useState } from "react";
+
+export const Route = createFileRoute("/orders")({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  const [filter, setFilter] = useState<string>('Todos');
-  const [search, setSearch] = useState<string>('');
-
+  const [filter, setFilter] = useState<string>("Todos");
+  const [search, setSearch] = useState<string>("");
 
   const handleFilter = (value: string) => {
     setFilter(value);
-  }
+  };
 
   return (
-    <div className='w-screen'>
-      <Header title={"Pedidos"} subtitle={"Todos os pedidos importados"} />
-      <div className='px-56 py-10'>
-        <div className='filters flex justify-between items-center'>
-          <InputGroup className="w-[390px]">
+    <div className="flex flex-col items-center min-h-screen w-full bg-background">
+      <Header
+        title="Pedidos"
+        subtitle="Todos os pedidos importados"
+      />
+      <div className="w-10/12 px-4 py-8 md:px-6 lg:px-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <InputGroup className="w-full lg:max-w-sm">
             <InputGroupInput
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-
-              placeholder="Buscar por cliente ou ID" />
-            <InputGroupAddon >
-              <SearchIcon />
+              placeholder="Buscar por cliente ou ID"
+            />
+            <InputGroupAddon>
+              <SearchIcon className="size-4" />
             </InputGroupAddon>
           </InputGroup>
-
-          <Tabs defaultValue="Todos" className="w-[390px]" onValueChange={handleFilter}>
-            <TabsList>
-              <TabsTrigger value="Todos" className="text-xs">Todos</TabsTrigger>
-              <TabsTrigger value="Pendente" className="text-xs">Pendentes</TabsTrigger>
-              <TabsTrigger value="Concluído" className="text-xs">Concluídos</TabsTrigger>
-              <TabsTrigger value="Cancelado" className="text-xs">Cancelados</TabsTrigger>
+          <Tabs
+            defaultValue="Todos"
+            onValueChange={handleFilter}
+          >
+            <TabsList className="w-full lg:w-auto">
+              <TabsTrigger value="Todos" className="text-xs">
+                Todos
+              </TabsTrigger>
+              <TabsTrigger value="Pendente" className="text-xs">
+                Pendentes
+              </TabsTrigger>
+              <TabsTrigger value="Concluído" className="text-xs">
+                Concluídos
+              </TabsTrigger>
+              <TabsTrigger value="Cancelado" className="text-xs">
+                Cancelados
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-
-          <Button className='text-xs cursor-pointer'>
-            <CirclePlus />
+          <Button className="w-full cursor-pointer gap-2 lg:w-auto">
+            <CirclePlus className="size-4" />
             Novo pedido
           </Button>
         </div>
-      </div>
-      <div className='px-56'>
-        <TableOrders filter={filter} search={search}/>
+        <div className="mt-8 w-full overflow-x-auto">
+          <TableOrders
+            filter={filter}
+            search={search}
+          />
+        </div>
       </div>
     </div>
-  )
+  );
 }
