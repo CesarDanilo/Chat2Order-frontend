@@ -113,14 +113,14 @@ export function DrawerOrders({ open, onOpenChange }: DrawerOrdersProps) {
                   <Label className="text-sm font-medium">
                     Nome do cliente
                   </Label>
-                  <Input placeholder="João Silva" />
+                  <Input placeholder="Ex. João Silva" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
                       Telefone
                     </Label>
-                    <Input placeholder="67999999999" />
+                    <Input placeholder="+55 67 999999999" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
@@ -148,12 +148,12 @@ export function DrawerOrders({ open, onOpenChange }: DrawerOrdersProps) {
                   <Label className="text-sm font-medium">
                     Endereço
                   </Label>
-                  <Textarea placeholder="Rua dos Apeninos, 390..." />
+                  <Textarea placeholder="Rua, número, bairro, cidade" />
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="grid grid-cols-2 gap-4 p-5">
+              <CardContent className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     Forma pag.
