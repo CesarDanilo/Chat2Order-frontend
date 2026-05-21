@@ -17,6 +17,8 @@ export const Route = createFileRoute('/orders')({
 
 function RouteComponent() {
   const [filter, setFilter] = useState<string>('Todos');
+  const [search, setSearch] = useState<string>('');
+
 
   const handleFilter = (value: string) => {
     setFilter(value);
@@ -28,8 +30,12 @@ function RouteComponent() {
       <div className='px-56 py-10'>
         <div className='filters flex justify-between items-center'>
           <InputGroup className="w-[390px]">
-            <InputGroupInput placeholder="Buscar por cliente ou ID" />
-            <InputGroupAddon>
+            <InputGroupInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+
+              placeholder="Buscar por cliente ou ID" />
+            <InputGroupAddon >
               <SearchIcon />
             </InputGroupAddon>
           </InputGroup>
@@ -50,7 +56,7 @@ function RouteComponent() {
         </div>
       </div>
       <div className='px-56'>
-        <TableOrders filter={filter} />
+        <TableOrders filter={filter} search={search}/>
       </div>
     </div>
   )

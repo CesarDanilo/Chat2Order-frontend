@@ -21,13 +21,14 @@ interface IOrderType {
 
 interface IFilterType {
   filter: string
+  search: string
 }
 
-export function TableOrders({ filter }: IFilterType) {
+export function TableOrders({ filter, search }: IFilterType) {
 
   const orders = [
     {
-      id: 1,
+      id: "1",
       customer: "João Silva",
       origin: "WhatsApp",
       status: "Pendente",
@@ -35,7 +36,7 @@ export function TableOrders({ filter }: IFilterType) {
       date: "20/05/2026",
     },
     {
-      id: 2,
+      id: "2",
       customer: "Maria Oliveira",
       origin: "WhatsApp",
       status: "Concluído",
@@ -43,7 +44,7 @@ export function TableOrders({ filter }: IFilterType) {
       date: "19/05/2026",
     },
     {
-      id: 3,
+      id: "3",
       customer: "Lucas Almeida",
       origin: "WhatsApp",
       status: "Cancelado",
@@ -51,7 +52,7 @@ export function TableOrders({ filter }: IFilterType) {
       date: "18/05/2026",
     },
     {
-      id: 4,
+      id: "4",
       customer: "Fernanda Costa",
       origin: "WhatsApp",
       status: "Em andamento",
@@ -59,7 +60,7 @@ export function TableOrders({ filter }: IFilterType) {
       date: "17/05/2026",
     },
     {
-      id: 5,
+      id: "5",
       customer: "Rafael Martins",
       origin: "WhatsApp",
       status: "Pago",
@@ -68,10 +69,23 @@ export function TableOrders({ filter }: IFilterType) {
     },
   ];
 
-  const filteredOrders = useMemo(() =>{
+  const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      return order.status === filter || filter === 'Todos'
-  })}, [filter])
+      const matchesFilter =
+        filter === "Todos" ||
+        order.status === filter;
+
+      const matchesSearch =
+        order.customer
+          .toLowerCase()
+          .includes(search.toLowerCase())
+
+        ||
+        order.id.includes(search);
+      return matchesFilter && matchesSearch;
+    });
+
+  }, [filter, search]);
 
   const statusColors: Record<string, string> = {
     Pendente: "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
@@ -99,7 +113,7 @@ export function TableOrders({ filter }: IFilterType) {
               <TableRow key={key}>
                 <TableCell className="px-6 py-3">
                   <div className="flex flex-col text-start">
-                    <span className="font-medium">
+                    <span className="text-xs font-semibold">
                       {order.customer}
                     </span>
                     <span className="text-zinc-500 text-xs">
@@ -118,8 +132,8 @@ export function TableOrders({ filter }: IFilterType) {
                     {order.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-6 py-3 text-end">{order.total}</TableCell>
-                <TableCell className="px-6 py-3 text-end">{order.date}</TableCell>
+                <TableCell className="px-6 py-3 text-end text-xs">{order.total}</TableCell>
+                <TableCell className="px-6 py-3 text-end text-xs">{order.date}</TableCell>
               </TableRow>
 
             ))
