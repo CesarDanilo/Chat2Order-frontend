@@ -5,7 +5,8 @@ interface OrderItem {
   totalPrice: number;
 }
 
-interface Order {
+export interface Order {
+  id?: string;
   customerName: string;
   customerPhone: string;
   address: string;
@@ -15,6 +16,7 @@ interface Order {
   source: "WHATSAPP" | "SITE";
   rawMessage: string;
   items: OrderItem[];
+  createdAt?: string;
 }
 
 
@@ -23,6 +25,7 @@ type CreateOrderDTO = Omit<Order, "status">;
 export class OrderService {
   private baseURL = "http://127.0.0.1:3000/api/order";
 
+  //Create order
   async create(data: CreateOrderDTO): Promise<Order>{
     const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NWMzNDEzNi05ZmNkLTQyYjYtYWE4ZS03NzFkZjdhMGZmZDkiLCJpYXQiOjE3Nzk0MDExMDMsImV4cCI6MTc3OTQ4NzUwM30.LV0Qn-BsrAqksaZZmOuHQ1ke-MtGkQVH1L_vlYll804";
 
@@ -40,6 +43,24 @@ export class OrderService {
     }
     const order: Order = await response.json();
 
+    return order;
+  }
+
+  //Get order
+  async read(): Promise<Order[]> {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NWMzNDEzNi05ZmNkLTQyYjYtYWE4ZS03NzFkZjdhMGZmZDkiLCJpYXQiOjE3Nzk0MDExMDMsImV4cCI6MTc3OTQ4NzUwM30.LV0Qn-BsrAqksaZZmOuHQ1ke-MtGkQVH1L_vlYll804";
+    const response = await fetch(this.baseURL, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
+    if (!response.ok) {
+      const error = await response.json();
+
+      throw new Error(error.message || "Erro ao buscar pedidos");
+    }
+    const order: Order[] = await response.json()
     return order;
   }
 }

@@ -8,16 +8,9 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { MessageCircle } from "lucide-react";
-import { useMemo } from "react";
-
-interface IOrderType {
-  id: number;
-  customer: string;
-  origin: string;
-  status: string;
-  total: string;
-  date: string;
-}
+import { useEffect, useMemo, useState } from "react";
+import { OrderService, type Order } from "@/services/orders-services";
+import { Spinner } from "@/components/ui/spinner"
 
 interface IFilterType {
   filter: string
@@ -25,49 +18,24 @@ interface IFilterType {
 }
 
 export function TableOrders({ filter, search }: IFilterType) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const orderService = new OrderService();
+  const [isLoading, setIsLoading] = useState(true);
 
-  const orders = [
-    {
-      id: "1",
-      customer: "João Silva",
-      origin: "WhatsApp",
-      status: "Pendente",
-      total: "R$ 320,00",
-      date: "20/05/2026",
-    },
-    {
-      id: "2",
-      customer: "Maria Oliveira",
-      origin: "WhatsApp",
-      status: "Concluído",
-      total: "R$ 1.250,00",
-      date: "19/05/2026",
-    },
-    {
-      id: "3",
-      customer: "Lucas Almeida",
-      origin: "WhatsApp",
-      status: "Cancelado",
-      total: "R$ 89,90",
-      date: "18/05/2026",
-    },
-    {
-      id: "4",
-      customer: "Fernanda Costa",
-      origin: "WhatsApp",
-      status: "Em andamento",
-      total: "R$ 540,00",
-      date: "17/05/2026",
-    },
-    {
-      id: "5",
-      customer: "Rafael Martins",
-      origin: "WhatsApp",
-      status: "Pago",
-      total: "R$ 2.430,00",
-      date: "16/05/2026",
-    },
-  ];
+  async function loadOrders() {
+    try {
+      setIsLoading(true);
+      const orders = await orderService.read()
+      setOrders(orders);
+      setIsLoading(false);
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  useEffect(() => {
+    loadOrders()
+  }, [])
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -76,16 +44,14 @@ export function TableOrders({ filter, search }: IFilterType) {
         order.status === filter;
 
       const matchesSearch =
-        order.customer
+        order.customerName
           .toLowerCase()
-          .includes(search.toLowerCase())
+          .includes(search.toLowerCase()) ||
+        order.id?.includes(search);
 
-        ||
-        order.id.includes(search);
       return matchesFilter && matchesSearch;
     });
-
-  }, [filter, search]);
+  }, [orders, filter, search]);
 
   const statusColors: Record<string, string> = {
     Pendente: "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
@@ -96,7 +62,7 @@ export function TableOrders({ filter, search }: IFilterType) {
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden">
+    <div className="rounded-2xl border flex flex-col justify-center items-center border-zinc-200 bg-white overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
@@ -109,12 +75,12 @@ export function TableOrders({ filter, search }: IFilterType) {
         </TableHeader>
         <TableBody>
           {
-            filteredOrders.map((order, key) => (
-              <TableRow key={key}>
+            filteredOrders.map((order) => (
+              <TableRow key={order.id}>
                 <TableCell className="px-6 py-3">
                   <div className="flex flex-col text-start">
                     <span className="text-xs font-semibold">
-                      {order.customer}
+                      {order.customerName}
                     </span>
                     <span className="text-zinc-500 text-xs">
                       #{order.id}
@@ -124,7 +90,7 @@ export function TableOrders({ filter, search }: IFilterType) {
                 <TableCell className="px-6 py-3 text-left ">
                   <div className="flex items-center gap-2">
                     <MessageCircle size={16} className="text-green-500" />
-                    <span className="text-zinc-500 text-xs">{order.origin}</span>
+                    <span className="text-zinc-500 text-xs">{order.source}</span>
                   </div>
                 </TableCell>
                 <TableCell className="px-6 py-3 text-center">
@@ -133,13 +99,19 @@ export function TableOrders({ filter, search }: IFilterType) {
                   </Badge>
                 </TableCell>
                 <TableCell className="px-6 py-3 text-end text-xs">{order.total}</TableCell>
-                <TableCell className="px-6 py-3 text-end text-xs">{order.date}</TableCell>
+                <TableCell className="px-6 py-3 text-end text-xs">{order.createdAt}</TableCell>
               </TableRow>
-
             ))
           }
         </TableBody>
       </Table>
+      <div className="flex h-6 items-center justify-center" >
+        {
+          isLoading && (
+            <Spinner />
+          )
+        }
+      </div>
     </div>
   )
 }
