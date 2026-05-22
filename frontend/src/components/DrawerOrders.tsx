@@ -201,6 +201,25 @@ export function DrawerOrders({
     }
   }, [alert.show])
 
+  const clearForm = () => {
+    setCustomerName("")
+    setCustomerPhone("")
+    setAddress("")
+    setRawMessage("")
+
+    setPaymentMethod("PIX")
+    setStatus("PENDENTE")
+    setSource("WHATSAPP")
+
+    setItems([
+      {
+        productName: "",
+        quantity: 1,
+        unitPrice: 0,
+      },
+    ])
+  }
+
   async function CreateOrder() {
     try {
 
@@ -240,6 +259,8 @@ export function DrawerOrders({
       }
 
       await orderService.create(data)
+
+      clearForm()
 
       setAlert({
         show: true,
@@ -352,6 +373,7 @@ export function DrawerOrders({
                     </Label>
 
                     <Input
+                      required
                       placeholder="+55 67 999999999"
                       value={customerPhone}
                       onChange={(e) =>
