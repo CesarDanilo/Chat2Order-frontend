@@ -9,10 +9,10 @@ interface Order {
   customerName: string;
   customerPhone: string;
   address: string;
-  paymentMethod: "pix" | "credit_card" | "debit_card" | "cash";
-  status: "pendente" | "concluidos"  | "cancelado";
+  paymentMethod: "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | "CASH";
+  status: "PENDENTE" | "CONCLUIDO" | "CANCELADO";
   total: number;
-  source: "whatsapp" | "site" | "app";
+  source: "WHATSAPP" | "SITE";
   rawMessage: string;
   items: OrderItem[];
 }

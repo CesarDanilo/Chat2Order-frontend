@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 //Components
 import { Button } from "@/components/ui/button"
 import {
@@ -24,6 +24,11 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
 // Icons
 import { Plus, Trash2 } from "lucide-react"
 import logo from "../public/icon.png"
@@ -43,6 +48,8 @@ interface OrderItem {
   quantity: number
   unitPrice: number
 }
+
+type AlertType = "success" | "error"
 
 //schema
 const itemSchema = z.object({
@@ -88,19 +95,19 @@ export const orderSchema = z.object({
     .number()
     .nonnegative("O total não pode ser negativo"),
 
-  source: z
-    .string()
-    .min(1, "A origem é obrigatória"),
+  source: z.enum([
+    "WHATSAPP",
+    "SITE",
+  ]),
 
   rawMessage: z
     .string()
     .optional(),
 
   status: z.enum([
-    "PENDING",
-    "PROCESSING",
-    "COMPLETED",
-    "CANCELLED",
+    "PENDENTE",
+    "CONCLUIDO",
+    "CANCELADO",
   ]),
 
   items: z
@@ -117,14 +124,15 @@ export function DrawerOrders({
   const [customerPhone, setCustomerPhone] = useState("")
   const [address, setAddress] = useState("")
   const [rawMessage, setRawMessage] = useState("")
-  const [status, setStatus] = useState<"pendente" | "concluidos" | "cancelado">("pendente");
+  const [status, setStatus] = useState<"PENDENTE" | "CONCLUIDO" | "CANCELADO">("PENDENTE");
   const [paymentMethod, setPaymentMethod] = useState<
-    "pix" | "credit_card" | "debit_card" | "cash"
-  >("pix")
+    "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | "CASH"
+  >("PIX")
+
 
   const [source, setSource] = useState<
-    "whatsapp" | "site" | "app"
-  >("whatsapp")
+    "WHATSAPP" | "SITE"
+  >("WHATSAPP")
 
   const [items, setItems] = useState<OrderItem[]>([
     {
@@ -133,6 +141,16 @@ export function DrawerOrders({
       unitPrice: 0,
     },
   ])
+
+  const [alert, setAlert] = useState<{
+    show: boolean
+    type: AlertType
+    message: string
+  }>({
+    show: false,
+    type: "success",
+    message: "",
+  })
 
   const addItem = () => {
     setItems([
@@ -170,6 +188,19 @@ export function DrawerOrders({
     0,
   )
 
+  useEffect(() => {
+    if (alert.show) {
+      const timer = setTimeout(() => {
+        setAlert((prev) => ({
+          ...prev,
+          show: false,
+        }))
+      }, 3000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [alert.show])
+
   async function CreateOrder() {
     try {
 
@@ -194,21 +225,38 @@ export function DrawerOrders({
       }
 
       const result = orderSchema.safeParse(data)
-      
+
       if (!result.success) {
+
         console.log(result.error.format())
-      } else {
-        console.log("Dados válidos")
+
+        setAlert({
+          show: true,
+          type: "error",
+          message:
+            "Verifique os campos do formulário.",
+        })
+        return
       }
 
-      const response = await orderService.create(data)
+      await orderService.create(data)
 
-      console.log(response)
+      setAlert({
+        show: true,
+        type: "success",
+        message:
+          "Pedido criado com sucesso.",
+      })
 
       onOpenChange(false)
 
     } catch (error) {
-      console.error(error)
+      setAlert({
+        show: true,
+        type: "error",
+        message:
+          "Não foi possível criar o pedido.",
+      })
     }
   }
 
@@ -218,6 +266,34 @@ export function DrawerOrders({
       open={open}
       onOpenChange={onOpenChange}
     >
+      {alert.show && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-5">
+          <Alert
+            className={`
+              w-[350px]
+              shadow-lg
+              border
+              ${alert.type === "success"
+                ? "border-green-500 bg-green-50"
+                : "border-red-500 bg-red-50"
+              }
+            `}
+          >
+
+            <AlertTitle>
+              {alert.type === "success"
+                ? "Pedido criado!"
+                : "Erro ao criar pedido"}
+            </AlertTitle>
+
+            <AlertDescription>
+              {alert.message}
+            </AlertDescription>
+
+          </Alert>
+        </div>
+
+      )}
       <DrawerContent className="ml-auto h-screen max-w-2xl">
 
         <DrawerHeader className="border-b">
@@ -296,9 +372,7 @@ export function DrawerOrders({
                       onValueChange={(value) =>
                         setSource(
                           value as
-                          | "whatsapp"
-                          | "site"
-                          | "app"
+                          "WHATSAPP" | "SITE"
                         )
                       }
                     >
@@ -309,16 +383,12 @@ export function DrawerOrders({
 
                       <SelectContent>
 
-                        <SelectItem value="whatsapp">
+                        <SelectItem value="WHATSAPP">
                           WhatsApp
                         </SelectItem>
 
-                        <SelectItem value="site">
+                        <SelectItem value="SITE">
                           Site
-                        </SelectItem>
-
-                        <SelectItem value="app">
-                          App
                         </SelectItem>
 
                       </SelectContent>
@@ -364,10 +434,7 @@ export function DrawerOrders({
                     onValueChange={(value) =>
                       setPaymentMethod(
                         value as
-                        | "pix"
-                        | "credit_card"
-                        | "debit_card"
-                        | "cash"
+                        "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | "CASH"
                       )
                     }
                   >
@@ -378,19 +445,19 @@ export function DrawerOrders({
 
                     <SelectContent>
 
-                      <SelectItem value="pix">
+                      <SelectItem value="PIX">
                         PIX
                       </SelectItem>
 
-                      <SelectItem value="credit_card">
+                      <SelectItem value="CREDIT_CARD">
                         Cartão
                       </SelectItem>
 
-                      <SelectItem value="debit_card">
+                      <SelectItem value="DEBIT_CARD">
                         Débito
                       </SelectItem>
 
-                      <SelectItem value="cash">
+                      <SelectItem value="CASH">
                         Dinheiro
                       </SelectItem>
 
@@ -408,7 +475,7 @@ export function DrawerOrders({
                     onValueChange={(value) =>
                       setStatus(
                         value as
-                        "pendente" | "concluidos" | "cancelado"
+                        "PENDENTE" | "CONCLUIDO" | "CANCELADO"
                       )
                     }
                   >
@@ -419,15 +486,15 @@ export function DrawerOrders({
 
                     <SelectContent>
 
-                      <SelectItem value="pendente">
+                      <SelectItem value="PENDENTE">
                         Pendente
                       </SelectItem>
 
-                      <SelectItem value="concluidos">
+                      <SelectItem value="CONCLUIDO">
                         Concluídos
                       </SelectItem>
 
-                      <SelectItem value="cancelado">
+                      <SelectItem value="CANCELADO">
                         Cancelado
                       </SelectItem>
 
@@ -492,7 +559,7 @@ export function DrawerOrders({
 
                         </div>
 
-                        <div className="col-span-2 space-y-2">
+                        <div className="col-span-3 space-y-2">
 
                           <Label className="text-sm font-medium">
                             Qtd
