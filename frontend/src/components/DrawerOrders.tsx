@@ -1,7 +1,6 @@
 import { useState } from "react"
-
+//Components
 import { Button } from "@/components/ui/button"
-
 import {
   Drawer,
   DrawerClose,
@@ -11,11 +10,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
-
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-
 import {
   Select,
   SelectContent,
@@ -23,18 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
 import {
   Card,
   CardContent,
 } from "@/components/ui/card"
-
+// Icons
 import { Plus, Trash2 } from "lucide-react"
-
 import logo from "../public/icon.png"
-
+//Services
 import { OrderService } from "@/services/orders-services"
+//Types
+import z from "zod"
 
+// Interfaces
 interface DrawerOrdersProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -46,6 +44,70 @@ interface OrderItem {
   unitPrice: number
 }
 
+//schema
+const itemSchema = z.object({
+  productName: z
+    .string()
+    .min(1, "O nome do produto é obrigatório"),
+
+  quantity: z
+    .number()
+    .int("A quantidade deve ser um número inteiro")
+    .positive("A quantidade deve ser maior que 0"),
+
+  unitPrice: z
+    .number()
+    .nonnegative("O preço unitário não pode ser negativo"),
+
+  totalPrice: z
+    .number()
+    .nonnegative("O total do item não pode ser negativo"),
+})
+
+export const orderSchema = z.object({
+  customerName: z
+    .string()
+    .min(1, "O nome do cliente é obrigatório"),
+
+  customerPhone: z
+    .string()
+    .min(8, "Telefone inválido"),
+
+  address: z
+    .string()
+    .min(1, "O endereço é obrigatório"),
+
+  paymentMethod: z.enum([
+    "PIX",
+    "CREDIT_CARD",
+    "DEBIT_CARD",
+    "CASH",
+  ]),
+
+  total: z
+    .number()
+    .nonnegative("O total não pode ser negativo"),
+
+  source: z
+    .string()
+    .min(1, "A origem é obrigatória"),
+
+  rawMessage: z
+    .string()
+    .optional(),
+
+  status: z.enum([
+    "PENDING",
+    "PROCESSING",
+    "COMPLETED",
+    "CANCELLED",
+  ]),
+
+  items: z
+    .array(itemSchema)
+    .min(1, "O pedido deve conter pelo menos 1 item"),
+})
+
 export function DrawerOrders({
   open,
   onOpenChange,
@@ -55,7 +117,7 @@ export function DrawerOrders({
   const [customerPhone, setCustomerPhone] = useState("")
   const [address, setAddress] = useState("")
   const [rawMessage, setRawMessage] = useState("")
-  const [status, setStatus] = useState<"pendente" | "concluidos"  | "cancelado">("pendente");
+  const [status, setStatus] = useState<"pendente" | "concluidos" | "cancelado">("pendente");
   const [paymentMethod, setPaymentMethod] = useState<
     "pix" | "credit_card" | "debit_card" | "cash"
   >("pix")
@@ -110,6 +172,7 @@ export function DrawerOrders({
 
   async function CreateOrder() {
     try {
+
       const orderService = new OrderService()
 
       const data = {
@@ -128,6 +191,14 @@ export function DrawerOrders({
           unitPrice: item.unitPrice,
           totalPrice: item.quantity * item.unitPrice,
         })),
+      }
+
+      const result = orderSchema.safeParse(data)
+      
+      if (!result.success) {
+        console.log(result.error.format())
+      } else {
+        console.log("Dados válidos")
       }
 
       const response = await orderService.create(data)
@@ -326,13 +397,18 @@ export function DrawerOrders({
                     </SelectContent>
 
                   </Select>
+                </div>
 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Status
+                  </Label>
                   <Select
                     value={status}
                     onValueChange={(value) =>
                       setStatus(
                         value as
-                        "pendente" | "concluidos"  | "cancelado"
+                        "pendente" | "concluidos" | "cancelado"
                       )
                     }
                   >
@@ -358,7 +434,6 @@ export function DrawerOrders({
                     </SelectContent>
 
                   </Select>
-
                 </div>
 
               </CardContent>
