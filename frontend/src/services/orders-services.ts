@@ -27,7 +27,7 @@ export class OrderService {
 
   //Create order
   async create(data: CreateOrderDTO): Promise<Order>{
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NWMzNDEzNi05ZmNkLTQyYjYtYWE4ZS03NzFkZjdhMGZmZDkiLCJpYXQiOjE3Nzk0MDExMDMsImV4cCI6MTc3OTQ4NzUwM30.LV0Qn-BsrAqksaZZmOuHQ1ke-MtGkQVH1L_vlYll804";
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4M2JiNTgxOS0zYTEyLTQyNjctYmUyOS02NmZkMWIwOWUzNjEiLCJpYXQiOjE3Nzk0ODU0MDIsImV4cCI6MTc3OTU3MTgwMn0.Q7SNjW1mgsCyGkBWAqbDrTlF2og90P8Z9gCBPEmmq4A";
 
     const response = await fetch(this.baseURL, {
       method: "POST",
@@ -48,7 +48,7 @@ export class OrderService {
 
   //Get order
   async read(): Promise<Order[]> {
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NWMzNDEzNi05ZmNkLTQyYjYtYWE4ZS03NzFkZjdhMGZmZDkiLCJpYXQiOjE3Nzk0MDExMDMsImV4cCI6MTc3OTQ4NzUwM30.LV0Qn-BsrAqksaZZmOuHQ1ke-MtGkQVH1L_vlYll804";
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4M2JiNTgxOS0zYTEyLTQyNjctYmUyOS02NmZkMWIwOWUzNjEiLCJpYXQiOjE3Nzk0ODU0MDIsImV4cCI6MTc3OTU3MTgwMn0.Q7SNjW1mgsCyGkBWAqbDrTlF2og90P8Z9gCBPEmmq4A";
     const response = await fetch(this.baseURL, {
       method: "GET",
       headers: {

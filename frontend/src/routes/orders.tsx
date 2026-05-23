@@ -15,8 +15,9 @@ import { Button } from "@/components/ui/button";
 
 import { CirclePlus, SearchIcon } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DrawerOrders } from "@/components/DrawerOrders";
+import { OrderService, type Order } from "@/services/orders-services";
 
 export const Route = createFileRoute("/orders")({
   component: RouteComponent,
@@ -26,6 +27,10 @@ function RouteComponent() {
   const [filter, setFilter] = useState<string>("Todos");
   const [search, setSearch] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  const orderService = new OrderService();
 
   const handleFilter = (value: string) => {
     setFilter(value);
@@ -35,11 +40,36 @@ function RouteComponent() {
     setOpen(true);
   };
 
+  async function loadOrders() {
+    try {
+
+      setIsLoading(true);
+
+      const data = await orderService.read();
+
+      setOrders(data);
+
+    } catch (error) {
+
+      console.log(error);
+
+    } finally {
+
+      setIsLoading(false);
+
+    }
+  }
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
   return (
     <div className="flex flex-col items-center min-h-screen w-full bg-background">
       <DrawerOrders
         open={open}
         onOpenChange={setOpen}
+        refreshOrders={loadOrders}
       />
 
       <Header
@@ -87,6 +117,8 @@ function RouteComponent() {
           <TableOrders
             filter={filter}
             search={search}
+            orders={orders}
+            isLoading={isLoading}
           />
         </div>
       </div>

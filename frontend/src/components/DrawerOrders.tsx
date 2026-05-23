@@ -41,6 +41,7 @@ import z from "zod"
 interface DrawerOrdersProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  refreshOrders: () => Promise<void>
 }
 
 interface OrderItem {
@@ -118,6 +119,7 @@ export const orderSchema = z.object({
 export function DrawerOrders({
   open,
   onOpenChange,
+  refreshOrders
 }: DrawerOrdersProps) {
 
   const [customerName, setCustomerName] = useState("")
@@ -261,6 +263,8 @@ export function DrawerOrders({
       await orderService.create(data)
 
       clearForm()
+
+      await refreshOrders()
 
       setAlert({
         show: true,
