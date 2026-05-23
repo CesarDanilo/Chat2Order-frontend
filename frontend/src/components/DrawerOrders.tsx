@@ -246,6 +246,7 @@ export function DrawerOrders({
       }
 
       const result = orderSchema.safeParse(data)
+      console.log(data)
 
       if (!result.success) {
 
