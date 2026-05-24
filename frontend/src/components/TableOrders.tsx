@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { MessageCircle } from "lucide-react"
+import { LaptopMinimal, MessageCircle } from "lucide-react"
 import { useMemo } from "react"
 import type { Order } from "@/services/orders-services"
 
@@ -98,11 +98,11 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
               </TableCell>
               <TableCell className="px-6 py-3 text-left">
                 <div className="flex items-center gap-2">
-
-                  <MessageCircle
-                    size={16}
-                    className="text-green-500"
-                  />
+                  {order.source === "WHATSAPP" ? (
+                    <MessageCircle size={16} className="text-green-500" />
+                  ) : (
+                    <LaptopMinimal size={16} className="text-purple-700" />
+                  )}
                   <span className="text-zinc-500 text-xs">
                     {UpperCaseStatus(order.source.toLowerCase())}
                   </span>
@@ -110,11 +110,11 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
               </TableCell>
               <TableCell className="px-6 py-3 text-center">
                 <Badge className={statusColors[order.status]}>
-                  {(order.status === "CONCLUIDO"? "Concluído": UpperCaseStatus(order.status.toLowerCase()) )}
+                  {(order.status === "CONCLUIDO" ? "Concluído" : UpperCaseStatus(order.status.toLowerCase()))}
                 </Badge>
               </TableCell>
               <TableCell className="px-6 py-3 text-end text-xs">
-                R$ {order.total}
+                R$ {order.total.toFixed(2)}
               </TableCell>
               <TableCell className="px-6 py-3 text-end text-xs">
                 {formatDate(order.createdAt)}
