@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { LaptopMinimal, MessageCircle } from "lucide-react"
 import { useMemo } from "react"
 import type { Order } from "@/services/orders-services"
+import { Skeleton } from "./ui/skeleton"
 
 interface IFilterType {
   orders: Order[]
@@ -61,6 +62,17 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
     return status.replace(/\b\w/g, char => char.toUpperCase());
   }
 
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-zinc-200 bg-white p-6 space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-2xl border flex flex-col border-zinc-200 bg-white overflow-hidden">
       <Table>
@@ -84,50 +96,85 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredOrders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="px-6 py-3">
-                <div className="flex flex-col text-start">
-                  <span className="text-xs font-semibold">
-                    {order.customerName}
-                  </span>
-                  <span className="text-zinc-500 text-xs">
-                    #{order.id}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell className="px-6 py-3 text-left">
-                <div className="flex items-center gap-2">
-                  {order.source === "WHATSAPP" ? (
-                    <MessageCircle size={16} className="text-green-500" />
-                  ) : (
-                    <LaptopMinimal size={16} className="text-purple-700" />
-                  )}
-                  <span className="text-zinc-500 text-xs">
-                    {UpperCaseStatus(order.source.toLowerCase())}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell className="px-6 py-3 text-center">
-                <Badge className={statusColors[order.status]}>
-                  {(order.status === "CONCLUIDO" ? "Concluído" : UpperCaseStatus(order.status.toLowerCase()))}
-                </Badge>
-              </TableCell>
-              <TableCell className="px-6 py-3 text-end text-xs">
-                R$ {order.total.toFixed(2)}
-              </TableCell>
-              <TableCell className="px-6 py-3 text-end text-xs">
-                {formatDate(order.createdAt)}
-              </TableCell>
-            </TableRow>
-          ))}
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <Skeleton className="h-4 w-32" />
+                </TableCell>
+
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+
+                <TableCell>
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                </TableCell>
+
+                <TableCell>
+                  <Skeleton className="h-4 w-16 ml-auto" />
+                </TableCell>
+
+                <TableCell>
+                  <Skeleton className="h-4 w-24 ml-auto" />
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            filteredOrders.map((order) => (
+              <TableRow key={order.id}>
+                <TableCell className="px-6 py-3">
+                  <div className="flex flex-col text-start">
+                    <span className="text-xs font-semibold">
+                      {order.customerName}
+                    </span>
+
+                    <span className="text-zinc-500 text-xs">
+                      #{order.id}
+                    </span>
+                  </div>
+                </TableCell>
+
+                <TableCell className="px-6 py-3 text-left">
+                  <div className="flex items-center gap-2">
+                    {order.source === "WHATSAPP" ? (
+                      <MessageCircle
+                        size={16}
+                        className="text-green-500"
+                      />
+                    ) : (
+                      <LaptopMinimal
+                        size={16}
+                        className="text-purple-700"
+                      />
+                    )}
+
+                    <span className="text-zinc-500 text-xs">
+                      {UpperCaseStatus(order.source.toLowerCase())}
+                    </span>
+                  </div>
+                </TableCell>
+
+                <TableCell className="px-6 py-3 text-center">
+                  <Badge className={statusColors[order.status]}>
+                    {order.status === "CONCLUIDO"
+                      ? "Concluído"
+                      : UpperCaseStatus(order.status.toLowerCase())}
+                  </Badge>
+                </TableCell>
+
+                <TableCell className="px-6 py-3 text-end text-xs">
+                  R$ {order.total.toFixed(2)}
+                </TableCell>
+
+                <TableCell className="px-6 py-3 text-end text-xs">
+                  {formatDate(order.createdAt)}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
-      {isLoading && (
-        <div className="flex h-14 items-center justify-center">
-          Carregando...
-        </div>
-      )}
     </div>
   )
 }
