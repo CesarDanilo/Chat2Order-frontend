@@ -42,21 +42,13 @@ function RouteComponent() {
 
   async function loadOrders() {
     try {
-
       setIsLoading(true);
-
       const data = await orderService.read();
-
       setOrders(data);
-
     } catch (error) {
-
       console.log(error);
-
     } finally {
-
       setIsLoading(false);
-
     }
   }
 
@@ -97,13 +89,13 @@ function RouteComponent() {
               <TabsTrigger value="Todos" className="text-xs">
                 Todos
               </TabsTrigger>
-              <TabsTrigger value="Pendente" className="text-xs">
+              <TabsTrigger value="pendente" className="text-xs">
                 Pendentes
               </TabsTrigger>
-              <TabsTrigger value="Concluído" className="text-xs">
+              <TabsTrigger value="concluido" className="text-xs">
                 Concluídos
               </TabsTrigger>
-              <TabsTrigger value="Cancelado" className="text-xs">
+              <TabsTrigger value="cancelado" className="text-xs">
                 Cancelados
               </TabsTrigger>
             </TabsList>

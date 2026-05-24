@@ -45,7 +45,7 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
 
       const matchesFilter =
         filter === "Todos" ||
-        order.status === filter
+        order.status === filter.toUpperCase()
 
       const matchesSearch =
         order.customerName
@@ -56,6 +56,10 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
       return matchesFilter && matchesSearch
     })
   }, [orders, filter, search])
+
+  function UpperCaseStatus(status: string) {
+    return status.replace(/\b\w/g, char => char.toUpperCase());
+  }
 
   return (
     <div className="rounded-2xl border flex flex-col border-zinc-200 bg-white overflow-hidden">
@@ -100,13 +104,13 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
                     className="text-green-500"
                   />
                   <span className="text-zinc-500 text-xs">
-                    {order.source}
+                    {UpperCaseStatus(order.source.toLowerCase())}
                   </span>
                 </div>
               </TableCell>
               <TableCell className="px-6 py-3 text-center">
                 <Badge className={statusColors[order.status]}>
-                  {order.status.toLowerCase()}
+                  {(order.status === "CONCLUIDO"? "Concluído": UpperCaseStatus(order.status.toLowerCase()) )}
                 </Badge>
               </TableCell>
               <TableCell className="px-6 py-3 text-end text-xs">
