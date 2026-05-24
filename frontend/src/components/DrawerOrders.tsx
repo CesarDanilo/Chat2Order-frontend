@@ -246,17 +246,15 @@ export function DrawerOrders({
       }
 
       const result = orderSchema.safeParse(data)
-      console.log(data)
 
       if (!result.success) {
 
-        console.log(result.error.format())
+        const firstError = result.error.issues[0]
 
         setAlert({
           show: true,
           type: "error",
-          message:
-            "Verifique os campos do formulário.",
+          message: firstError.message
         })
         return
       }
