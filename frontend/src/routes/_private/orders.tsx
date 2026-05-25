@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { DrawerOrders } from "@/components/DrawerOrders";
 import { OrderService, type Order } from "@/services/orders-services";
 
-export const Route = createFileRoute("/orders")({
+export const Route = createFileRoute("/_private/orders")({
   component: RouteComponent,
 });
 

@@ -9,30 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as OrdersRouteImport } from './routes/orders'
-import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as PrivateRouteImport } from './routes/_private'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PublicAuthRouteImport } from './routes/_public/auth'
+import { Route as PrivateUsersRouteImport } from './routes/_private/users'
+import { Route as PrivateProfileRouteImport } from './routes/_private/profile'
+import { Route as PrivateOrdersRouteImport } from './routes/_private/orders'
+import { Route as PrivateDashboardRouteImport } from './routes/_private/dashboard'
 
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrdersRoute = OrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const PrivateRoute = PrivateRouteImport.update({
+  id: '/_private',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -40,73 +26,87 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicAuthRoute = PublicAuthRouteImport.update({
+  id: '/_public/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivateUsersRoute = PrivateUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => PrivateRoute,
+} as any)
+const PrivateProfileRoute = PrivateProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => PrivateRoute,
+} as any)
+const PrivateOrdersRoute = PrivateOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => PrivateRoute,
+} as any)
+const PrivateDashboardRoute = PrivateDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => PrivateRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/orders': typeof OrdersRoute
-  '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
+  '/dashboard': typeof PrivateDashboardRoute
+  '/orders': typeof PrivateOrdersRoute
+  '/profile': typeof PrivateProfileRoute
+  '/users': typeof PrivateUsersRoute
+  '/auth': typeof PublicAuthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/orders': typeof OrdersRoute
-  '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
+  '/dashboard': typeof PrivateDashboardRoute
+  '/orders': typeof PrivateOrdersRoute
+  '/profile': typeof PrivateProfileRoute
+  '/users': typeof PrivateUsersRoute
+  '/auth': typeof PublicAuthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/orders': typeof OrdersRoute
-  '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
+  '/_private': typeof PrivateRouteWithChildren
+  '/_private/dashboard': typeof PrivateDashboardRoute
+  '/_private/orders': typeof PrivateOrdersRoute
+  '/_private/profile': typeof PrivateProfileRoute
+  '/_private/users': typeof PrivateUsersRoute
+  '/_public/auth': typeof PublicAuthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/orders' | '/profile' | '/users'
+  fullPaths: '/' | '/dashboard' | '/orders' | '/profile' | '/users' | '/auth'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/orders' | '/profile' | '/users'
-  id: '__root__' | '/' | '/dashboard' | '/orders' | '/profile' | '/users'
+  to: '/' | '/dashboard' | '/orders' | '/profile' | '/users' | '/auth'
+  id:
+    | '__root__'
+    | '/'
+    | '/_private'
+    | '/_private/dashboard'
+    | '/_private/orders'
+    | '/_private/profile'
+    | '/_private/users'
+    | '/_public/auth'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
-  OrdersRoute: typeof OrdersRoute
-  ProfileRoute: typeof ProfileRoute
-  UsersRoute: typeof UsersRoute
+  PrivateRoute: typeof PrivateRouteWithChildren
+  PublicAuthRoute: typeof PublicAuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/orders': {
-      id: '/orders'
-      path: '/orders'
-      fullPath: '/orders'
-      preLoaderRoute: typeof OrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/_private': {
+      id: '/_private'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PrivateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -116,15 +116,65 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_public/auth': {
+      id: '/_public/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof PublicAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_private/users': {
+      id: '/_private/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof PrivateUsersRouteImport
+      parentRoute: typeof PrivateRoute
+    }
+    '/_private/profile': {
+      id: '/_private/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof PrivateProfileRouteImport
+      parentRoute: typeof PrivateRoute
+    }
+    '/_private/orders': {
+      id: '/_private/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof PrivateOrdersRouteImport
+      parentRoute: typeof PrivateRoute
+    }
+    '/_private/dashboard': {
+      id: '/_private/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof PrivateDashboardRouteImport
+      parentRoute: typeof PrivateRoute
+    }
   }
 }
 
+interface PrivateRouteChildren {
+  PrivateDashboardRoute: typeof PrivateDashboardRoute
+  PrivateOrdersRoute: typeof PrivateOrdersRoute
+  PrivateProfileRoute: typeof PrivateProfileRoute
+  PrivateUsersRoute: typeof PrivateUsersRoute
+}
+
+const PrivateRouteChildren: PrivateRouteChildren = {
+  PrivateDashboardRoute: PrivateDashboardRoute,
+  PrivateOrdersRoute: PrivateOrdersRoute,
+  PrivateProfileRoute: PrivateProfileRoute,
+  PrivateUsersRoute: PrivateUsersRoute,
+}
+
+const PrivateRouteWithChildren =
+  PrivateRoute._addFileChildren(PrivateRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
-  OrdersRoute: OrdersRoute,
-  ProfileRoute: ProfileRoute,
-  UsersRoute: UsersRoute,
+  PrivateRoute: PrivateRouteWithChildren,
+  PublicAuthRoute: PublicAuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

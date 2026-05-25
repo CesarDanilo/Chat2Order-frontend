@@ -1,14 +1,18 @@
-import { Header } from '@/components/Header'
-import { createFileRoute } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  redirect,
+} from "@tanstack/react-router";
 
-export const Route = createFileRoute('/')({
-  component: RouteComponent,
-})
+export const Route = createFileRoute("/")({
 
-function RouteComponent() {
-  return (
-    <div className='w-screen'>
-      <Header title={"Dashboard"} subtitle={"Todos os pedidos importados"}/>
-    </div>
-  )
-}
+  beforeLoad: () => {
+
+    const token = localStorage.getItem("token");
+
+    throw redirect({
+      to: token
+        ? "/dashboard"
+        : "/auth",
+    });
+  },
+});
