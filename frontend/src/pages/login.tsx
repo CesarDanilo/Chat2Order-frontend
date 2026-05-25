@@ -102,7 +102,7 @@ export function Login() {
         throw new Error("Token não encontrado");
       }
 
-      signIn(response.token);
+      signIn(response.token, response.user);
 
       navigate({
         to: "/",

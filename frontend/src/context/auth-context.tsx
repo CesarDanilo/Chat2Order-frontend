@@ -132,11 +132,8 @@ export function AuthProvider({
     <AuthContext.Provider
       value={{
         token,
-
         user,
-
         authenticated: !!token,
-
         signIn,
         signOut,
       }}

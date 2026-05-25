@@ -45,7 +45,7 @@ export function AppSideBar() {
     },
 
     // SOMENTE ADMIN
-    ...(user?.admin
+    ...(user?.admin === true
       ? [
           {
             title: "Users",

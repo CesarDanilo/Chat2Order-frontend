@@ -4,6 +4,13 @@ import { api } from "@/lib/api"
 // TYPES
 // =========================
 
+type User = {
+  id: string
+  name: string
+  email: string
+  admin: boolean
+}
+
 type LoginRequest = {
   email: string
   password: string
@@ -11,6 +18,7 @@ type LoginRequest = {
 
 type LoginResponse = {
   token: string
+  user: User
 }
 
 type RegisterRequest = {
