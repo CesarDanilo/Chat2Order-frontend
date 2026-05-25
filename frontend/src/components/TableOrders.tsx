@@ -11,6 +11,16 @@ import { LaptopMinimal, MessageCircle } from "lucide-react"
 import { useMemo } from "react"
 import type { Order } from "@/services/orders-services"
 import { Skeleton } from "./ui/skeleton"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface IFilterType {
   orders: Order[]
@@ -72,6 +82,8 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
       </div>
     )
   }
+
+  function handleDelete() {}
 
   return (
     <div className="rounded-2xl border flex flex-col border-zinc-200 bg-white overflow-hidden">
@@ -169,6 +181,35 @@ export function TableOrders({ filter, search, orders, isLoading, }: IFilterType)
 
                 <TableCell className="px-6 py-3 text-end text-xs">
                   {formatDate(order.createdAt)}
+                </TableCell>
+
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                      >
+                        ⋮
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
+                        <DropdownMenuItem>Editar pedido</DropdownMenuItem>
+                      </DropdownMenuGroup>
+
+                      <DropdownMenuSeparator />
+
+                      {/* EXCLUIR */}
+                      <DropdownMenuItem
+                        className="text-red-500"
+                        onClick={() => handleDelete(order.id)}
+                      >
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))
