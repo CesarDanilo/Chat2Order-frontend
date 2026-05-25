@@ -27,7 +27,13 @@ export class OrderService {
 
   //Create order
   async create(data: CreateOrderDTO): Promise<Order>{
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4M2JiNTgxOS0zYTEyLTQyNjctYmUyOS02NmZkMWIwOWUzNjEiLCJpYXQiOjE3Nzk2MzY5OTEsImV4cCI6MTc3OTcyMzM5MX0.vyDRhS8fprBRiobsJRoVlfGGtQUX-UIysi8vtAeap0k";
+
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Usuário não autenticado");
+    }
 
     const response = await fetch(this.baseURL, {
       method: "POST",
@@ -48,7 +54,13 @@ export class OrderService {
 
   //Get order
   async read(): Promise<Order[]> {
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4M2JiNTgxOS0zYTEyLTQyNjctYmUyOS02NmZkMWIwOWUzNjEiLCJpYXQiOjE3Nzk2MzY5OTEsImV4cCI6MTc3OTcyMzM5MX0.vyDRhS8fprBRiobsJRoVlfGGtQUX-UIysi8vtAeap0k";
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Usuário não autenticado");
+    }
+    
     const response = await fetch(this.baseURL, {
       method: "GET",
       headers: {

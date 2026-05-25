@@ -45,7 +45,7 @@ export async function loginService(
 export async function registerService(
   data: RegisterRequest
 ) {
-  return api("/auth/register", {
+  return api("/user/", {
     method: "POST",
     body: JSON.stringify(data),
   }) as Promise<RegisterResponse>

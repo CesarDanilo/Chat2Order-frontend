@@ -13,6 +13,7 @@ import { Route as PrivateRouteImport } from './routes/_private'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PublicAuthRouteImport } from './routes/_public/auth'
 import { Route as PrivateUsersRouteImport } from './routes/_private/users'
+import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
 import { Route as PrivateProfileRouteImport } from './routes/_private/profile'
 import { Route as PrivateOrdersRouteImport } from './routes/_private/orders'
 import { Route as PrivateDashboardRouteImport } from './routes/_private/dashboard'
@@ -36,6 +37,11 @@ const PrivateUsersRoute = PrivateUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => PrivateRoute,
 } as any)
+const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => PrivateRoute,
+} as any)
 const PrivateProfileRoute = PrivateProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof PrivateDashboardRoute
   '/orders': typeof PrivateOrdersRoute
   '/profile': typeof PrivateProfileRoute
+  '/settings': typeof PrivateSettingsRoute
   '/users': typeof PrivateUsersRoute
   '/auth': typeof PublicAuthRoute
 }
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof PrivateDashboardRoute
   '/orders': typeof PrivateOrdersRoute
   '/profile': typeof PrivateProfileRoute
+  '/settings': typeof PrivateSettingsRoute
   '/users': typeof PrivateUsersRoute
   '/auth': typeof PublicAuthRoute
 }
@@ -75,14 +83,29 @@ export interface FileRoutesById {
   '/_private/dashboard': typeof PrivateDashboardRoute
   '/_private/orders': typeof PrivateOrdersRoute
   '/_private/profile': typeof PrivateProfileRoute
+  '/_private/settings': typeof PrivateSettingsRoute
   '/_private/users': typeof PrivateUsersRoute
   '/_public/auth': typeof PublicAuthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/orders' | '/profile' | '/users' | '/auth'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/orders'
+    | '/profile'
+    | '/settings'
+    | '/users'
+    | '/auth'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/orders' | '/profile' | '/users' | '/auth'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/orders'
+    | '/profile'
+    | '/settings'
+    | '/users'
+    | '/auth'
   id:
     | '__root__'
     | '/'
@@ -90,6 +113,7 @@ export interface FileRouteTypes {
     | '/_private/dashboard'
     | '/_private/orders'
     | '/_private/profile'
+    | '/_private/settings'
     | '/_private/users'
     | '/_public/auth'
   fileRoutesById: FileRoutesById
@@ -130,6 +154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateUsersRouteImport
       parentRoute: typeof PrivateRoute
     }
+    '/_private/settings': {
+      id: '/_private/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof PrivateSettingsRouteImport
+      parentRoute: typeof PrivateRoute
+    }
     '/_private/profile': {
       id: '/_private/profile'
       path: '/profile'
@@ -158,6 +189,7 @@ interface PrivateRouteChildren {
   PrivateDashboardRoute: typeof PrivateDashboardRoute
   PrivateOrdersRoute: typeof PrivateOrdersRoute
   PrivateProfileRoute: typeof PrivateProfileRoute
+  PrivateSettingsRoute: typeof PrivateSettingsRoute
   PrivateUsersRoute: typeof PrivateUsersRoute
 }
 
@@ -165,6 +197,7 @@ const PrivateRouteChildren: PrivateRouteChildren = {
   PrivateDashboardRoute: PrivateDashboardRoute,
   PrivateOrdersRoute: PrivateOrdersRoute,
   PrivateProfileRoute: PrivateProfileRoute,
+  PrivateSettingsRoute: PrivateSettingsRoute,
   PrivateUsersRoute: PrivateUsersRoute,
 }
 
