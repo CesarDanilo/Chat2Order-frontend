@@ -71,13 +71,17 @@ export function AuthProvider({
 
   const [user, setUser] =
     useState<User | null>(() => {
+      try {
+        const storage =
+          localStorage.getItem("user");
 
-      const storage =
-        localStorage.getItem("user");
+        return storage
+          ? JSON.parse(storage)
+          : null;
 
-      return storage
-        ? JSON.parse(storage)
-        : null;
+      } catch {
+        return null;
+      }
     });
 
   // =========================
