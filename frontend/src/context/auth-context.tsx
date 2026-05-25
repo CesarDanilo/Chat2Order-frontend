@@ -7,14 +7,32 @@ import {
 } from "react";
 
 // =========================
-// TYPES
+// USER TYPE
+// =========================
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  admin: boolean;
+};
+
+// =========================
+// CONTEXT TYPE
 // =========================
 
 type AuthContextType = {
   token: string | null;
+
+  user: User | null;
+
   authenticated: boolean;
 
-  signIn: (token: string) => void;
+  signIn: (
+    token: string,
+    user: User
+  ) => void;
+
   signOut: () => void;
 };
 
@@ -39,22 +57,51 @@ export function AuthProvider({
 }: AuthProviderProps) {
 
   // =========================
-  // STATE
+  // TOKEN
   // =========================
 
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("token")
-  );
+  const [token, setToken] =
+    useState<string | null>(
+      localStorage.getItem("token")
+    );
+
+  // =========================
+  // USER
+  // =========================
+
+  const [user, setUser] =
+    useState<User | null>(() => {
+
+      const storage =
+        localStorage.getItem("user");
+
+      return storage
+        ? JSON.parse(storage)
+        : null;
+    });
 
   // =========================
   // LOGIN
   // =========================
 
-  function signIn(token: string) {
+  function signIn(
+    token: string,
+    user: User
+  ) {
 
-    localStorage.setItem("token", token);
+    localStorage.setItem(
+      "token",
+      token
+    );
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(user)
+    );
 
     setToken(token);
+
+    setUser(user);
   }
 
   // =========================
@@ -65,7 +112,11 @@ export function AuthProvider({
 
     localStorage.removeItem("token");
 
+    localStorage.removeItem("user");
+
     setToken(null);
+
+    setUser(null);
   }
 
   // =========================
@@ -77,6 +128,9 @@ export function AuthProvider({
     <AuthContext.Provider
       value={{
         token,
+
+        user,
+
         authenticated: !!token,
 
         signIn,
