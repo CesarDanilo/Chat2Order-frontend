@@ -19,17 +19,14 @@ export interface Order {
   createdAt?: string;
 }
 
-
 type CreateOrderDTO = Omit<Order, "status">;
 
 export class OrderService {
   private baseURL = "http://127.0.0.1:3000/api/order";
 
   //Create order
-  async create(data: CreateOrderDTO): Promise<Order>{
-
-    const token =
-      localStorage.getItem("token");
+  async create(data: CreateOrderDTO): Promise<Order> {
+    const token = localStorage.getItem("token");
 
     if (!token) {
       throw new Error("Usuário não autenticado");
@@ -38,7 +35,7 @@ export class OrderService {
     const response = await fetch(this.baseURL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
@@ -54,25 +51,48 @@ export class OrderService {
 
   //Get order
   async read(): Promise<Order[]> {
-    const token =
-      localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
     if (!token) {
       throw new Error("Usuário não autenticado");
     }
-    
+
     const response = await fetch(this.baseURL, {
       method: "GET",
       headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    })
+        Authorization: `Bearer ${token}`,
+      },
+    });
     if (!response.ok) {
       const error = await response.json();
 
       throw new Error(error.message || "Erro ao buscar pedidos");
     }
-    const order: Order[] = await response.json()
+    const order: Order[] = await response.json();
     return order;
+  }
+
+  //Delete order
+  async delete(id: string) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const response = await fetch(`${this.baseURL}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+
+      throw new Error(error.message || "Erro ao deletar pedido");
+    }
+
+    return true;
   }
 }

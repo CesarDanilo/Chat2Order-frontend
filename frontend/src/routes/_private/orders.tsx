@@ -52,6 +52,10 @@ function RouteComponent() {
     }
   }
 
+  function removeOrder(id: string) {
+    setOrders((prevOrders) => prevOrders.filter((order) => order.id !== id));
+  }
+
   useEffect(() => {
     loadOrders();
   }, []);
@@ -64,10 +68,7 @@ function RouteComponent() {
         refreshOrders={loadOrders}
       />
 
-      <Header
-        title="Pedidos"
-        subtitle="Todos os pedidos importados"
-      />
+      <Header title="Pedidos" subtitle="Todos os pedidos importados" />
 
       <div className="w-10/12 px-4 py-8 md:px-6 lg:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -81,10 +82,7 @@ function RouteComponent() {
               <SearchIcon className="size-4" />
             </InputGroupAddon>
           </InputGroup>
-          <Tabs
-            defaultValue="Todos"
-            onValueChange={handleFilter}
-          >
+          <Tabs defaultValue="Todos" onValueChange={handleFilter}>
             <TabsList className="w-full lg:w-auto">
               <TabsTrigger value="Todos" className="text-xs">
                 Todos
@@ -100,7 +98,10 @@ function RouteComponent() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button className="w-full cursor-pointer gap-2 lg:w-auto" onClick={() => handleOpen()}>
+          <Button
+            className="w-full cursor-pointer gap-2 lg:w-auto"
+            onClick={() => handleOpen()}
+          >
             <CirclePlus className="size-4" />
             Novo pedido
           </Button>
@@ -111,6 +112,7 @@ function RouteComponent() {
             search={search}
             orders={orders}
             isLoading={isLoading}
+            onDeleteOrder={removeOrder}
           />
         </div>
       </div>
