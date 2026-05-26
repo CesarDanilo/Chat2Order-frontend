@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DrawerOrders } from "@/components/DrawerOrders";
 import { useState, useEffect } from "react";
 
 type AlertType = "success" | "error";
@@ -41,6 +42,9 @@ export function TableOrders({
   orders,
   isLoading,
   onDeleteOrder,
+  setDrawerMode,
+  setSelectedOrderId,
+  setOpen,
 }: IFilterType) {
   const [alert, setAlert] = useState<{
     show: boolean;
@@ -130,6 +134,12 @@ export function TableOrders({
         message: "Não foi possível deletar o pedido.",
       });
     }
+  }
+
+  async function handleEdit(id: string) {
+    setDrawerMode("edit");
+    setSelectedOrderId(id);
+    setOpen(true);
   }
 
   return (
@@ -254,7 +264,11 @@ export function TableOrders({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
                         <DropdownMenuGroup>
-                          <DropdownMenuItem>Editar pedido</DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(order.id)}
+                          >
+                            Editar pedido
+                          </DropdownMenuItem>
                         </DropdownMenuGroup>
 
                         <DropdownMenuSeparator />

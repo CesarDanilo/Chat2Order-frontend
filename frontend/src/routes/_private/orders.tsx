@@ -27,8 +27,10 @@ function RouteComponent() {
   const [filter, setFilter] = useState<string>("Todos");
   const [search, setSearch] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
+  const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
   const [isLoading, setIsLoading] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const orderService = new OrderService();
 
@@ -36,7 +38,9 @@ function RouteComponent() {
     setFilter(value);
   };
 
-  const handleOpen = () => {
+  const handleCreate = () => {
+    setDrawerMode("create");
+    setSelectedOrderId(null);
     setOpen(true);
   };
 
@@ -66,6 +70,8 @@ function RouteComponent() {
         open={open}
         onOpenChange={setOpen}
         refreshOrders={loadOrders}
+        mode={drawerMode}
+        orderId={selectedOrderId}
       />
 
       <Header title="Pedidos" subtitle="Todos os pedidos importados" />
@@ -100,7 +106,7 @@ function RouteComponent() {
           </Tabs>
           <Button
             className="w-full cursor-pointer gap-2 lg:w-auto"
-            onClick={() => handleOpen()}
+            onClick={() => handleCreate()}
           >
             <CirclePlus className="size-4" />
             Novo pedido
@@ -113,6 +119,9 @@ function RouteComponent() {
             orders={orders}
             isLoading={isLoading}
             onDeleteOrder={removeOrder}
+            setDrawerMode={setDrawerMode}
+            setSelectedOrderId={setSelectedOrderId}
+            setOpen={setOpen}
           />
         </div>
       </div>
