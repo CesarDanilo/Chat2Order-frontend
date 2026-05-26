@@ -90,7 +90,7 @@ export function DrawerOrders({
   onOpenChange,
   refreshOrders,
   mode,
-  userId,
+  orderId,
 }: DrawerOrdersProps) {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -172,6 +172,18 @@ export function DrawerOrders({
     }
   }, [alert.show]);
 
+  useEffect(() => {
+    if (open && mode === "edit" && orderId) {
+      GetOrder();
+    }
+  }, [open, mode, orderId]);
+
+  useEffect(() => {
+    if (open && mode === "create") {
+      clearForm();
+    }
+  }, [open, mode]);
+
   const clearForm = () => {
     setCustomerName("");
     setCustomerPhone("");
@@ -248,9 +260,110 @@ export function DrawerOrders({
     }
   }
 
-  async function UpdateOrder() {
-    return none;
+  async function GetOrder() {
+    try {
+      if (!orderId) return;
+
+      const orderService = new OrderService();
+
+      const order = await orderService.readById(orderId);
+
+      setCustomerName(order.customerName);
+
+      setCustomerPhone(order.customerPhone);
+
+      setAddress(order.address);
+
+      setRawMessage(order.rawMessage || "");
+
+      setStatus(order.status);
+
+      setPaymentMethod(order.paymentMethod);
+
+      setSource(order.source);
+
+      setItems(
+        order.items.map((item: any) => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      );
+    } catch (error) {
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Não foi possível buscar o pedido.",
+      });
+    }
   }
+
+  async function UpdateOrder() {
+    try {
+      if (!orderId) {
+        setAlert({
+          show: true,
+          type: "error",
+          message: "Pedido inválido.",
+        });
+
+        return;
+      }
+
+      const orderService = new OrderService();
+
+      const data = {
+        customerName,
+        customerPhone,
+        address,
+        paymentMethod,
+        total,
+        source,
+        rawMessage,
+        status,
+
+        items: items.map((item) => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.quantity * item.unitPrice,
+        })),
+      };
+
+      const result = orderSchema.safeParse(data);
+
+      if (!result.success) {
+        const firstError = result.error.issues[0];
+
+        setAlert({
+          show: true,
+          type: "error",
+          message: firstError.message,
+        });
+
+        return;
+      }
+
+      await orderService.update(orderId, data);
+
+      await refreshOrders();
+
+      setAlert({
+        show: true,
+        type: "success",
+        message: "Pedido atualizado com sucesso.",
+      });
+
+      onOpenChange(false);
+    } catch (error) {
+      setAlert({
+        show: true,
+        type: "error",
+        message: "Não foi possível atualizar o pedido.",
+      });
+    }
+  }
+
   return (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
       {alert.show && (
@@ -269,7 +382,7 @@ export function DrawerOrders({
           >
             <AlertTitle>
               {alert.type === "success"
-                ? "Pedido criado!"
+                ? `Pedido ${mode == "create" ? "criado" : "atualizado"}!`
                 : "Erro ao criar pedido"}
             </AlertTitle>
 

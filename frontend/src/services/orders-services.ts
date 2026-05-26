@@ -72,6 +72,53 @@ export class OrderService {
     return order;
   }
 
+  async readById(orderId: string): Promise<Order[]> {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const response = await fetch(`${this.baseURL}/${orderId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+
+      throw new Error(error.message || "Erro ao buscar pedidos");
+    }
+    const order: Order[] = await response.json();
+    return order;
+  }
+
+  //Update order
+  async update(orderId: string, data: CreateOrderInput) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const response = await fetch(`${this.baseURL}/${orderId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error("Erro ao atualizar pedido");
+    }
+    const order: Order = await response.json();
+
+    return order;
+  }
+
   //Delete order
   async delete(id: string) {
     const token = localStorage.getItem("token");

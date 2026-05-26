@@ -265,7 +265,10 @@ export function TableOrders({
                       <DropdownMenuContent>
                         <DropdownMenuGroup>
                           <DropdownMenuItem
-                            onClick={() => handleEdit(order.id)}
+                            onClick={() => {
+                              (document.activeElement as HTMLElement)?.blur();
+                              handleEdit(order.id);
+                            }}
                           >
                             Editar pedido
                           </DropdownMenuItem>
