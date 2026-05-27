@@ -30,4 +30,26 @@ export class UserService {
     const order: User[] = await response.json();
     return order;
   }
+
+  async readById(user_id: string): Promise<User> {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const response = await fetch(`${this.baseURL}/${user_id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+
+      throw new Error(error.message || "Erro ao buscar pedidos");
+    }
+    const order: User = await response.json();
+    return order;
+  }
 }
