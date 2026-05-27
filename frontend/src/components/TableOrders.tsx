@@ -79,12 +79,13 @@ export function TableOrders({
 
   const statusColors: Record<string, string> = {
     PENDENTE:
-      "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+      "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border-purple-300",
 
     CONCLUIDO:
-      "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
+      "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300 border-green-300",
 
-    CANCELADO: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
+    CANCELADO:
+      "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 border-red-300",
   };
 
   const filteredOrders = useMemo(() => {
@@ -140,6 +141,37 @@ export function TableOrders({
     setDrawerMode("edit");
     setSelectedOrderId(id);
     setOpen(true);
+  }
+
+  function capitalize(text: string) {
+    return text.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  function formatRelativeDate(date?: string) {
+    if (!date) return "-";
+
+    const now = new Date();
+    const orderDate = new Date(date);
+
+    const diffMs = now.getTime() - orderDate.getTime();
+
+    const minutes = Math.floor(diffMs / 1000 / 60);
+
+    if (minutes < 1) return "Agora mesmo";
+
+    if (minutes < 60) {
+      return `há ${minutes} min`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+
+    if (hours < 24) {
+      return `há ${hours}h`;
+    }
+
+    const days = Math.floor(hours / 24);
+
+    return `há ${days}d`;
   }
 
   return (
@@ -217,26 +249,73 @@ export function TableOrders({
                 <TableRow key={order.id}>
                   <TableCell className="px-6 py-3">
                     <div className="flex flex-col text-start">
-                      <span className="text-xs font-semibold">
+                      <span className="text-sm font-semibold">
                         {order.customerName}
                       </span>
 
-                      <span className="text-zinc-500 text-xs">#{order.id}</span>
+                      <span className="text-zinc-500 text-xs">
+                        #{order.id.slice(0, 8)}
+                      </span>
                     </div>
                   </TableCell>
 
                   <TableCell className="px-6 py-3 text-left">
-                    <div className="flex items-center gap-2">
+                    <Badge
+                      className={`
+                        inline-flex
+                        items-center
+                        gap-1
+                        rounded-full
+                        border
+                        px-2.5
+                        py-1
+                        font-medium
+                        shadow-none
+                        ${
+                          order.source === "WHATSAPP"
+                            ? `
+                              border-green-300
+                              bg-green-50
+                              text-green-700
+                              hover:bg-green-50
+                              dark:border-green-800
+                              dark:bg-green-950
+                              dark:text-green-300
+                            `
+                            : `
+                              border-blue-300
+                              bg-blue-50
+                              text-blue-700
+                              hover:bg-blue-50
+                              dark:border-blue-800
+                              dark:bg-blue-950
+                              dark:text-blue-300
+                            `
+                        }
+                      `}
+                    >
                       {order.source === "WHATSAPP" ? (
-                        <MessageCircle size={16} className="text-green-500" />
+                        <MessageCircle
+                          size={12}
+                          className="
+                            text-green-600
+                            dark:text-green-300
+                          "
+                        />
                       ) : (
-                        <LaptopMinimal size={16} className="text-purple-700" />
+                        <LaptopMinimal
+                          size={12}
+                          className="
+                            text-blue-600
+                            dark:text-blue-300
+                          "
+                        />
                       )}
 
-                      <span className="text-zinc-500 text-xs">
-                        {UpperCaseStatus(order.source.toLowerCase())}
+                      <span className="font-xs tracking-wide">
+                        {capitalize(order.source.toLowerCase())}
                       </span>
-                    </div>
+                    </Badge>
                   </TableCell>
 
                   <TableCell className="px-6 py-3 text-center">
@@ -251,8 +330,19 @@ export function TableOrders({
                     R$ {order.total.toFixed(2)}
                   </TableCell>
 
-                  <TableCell className="px-6 py-3 text-end text-xs">
-                    {formatDate(order.createdAt)}
+                  <TableCell className="px-6 text-end">
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs font-medium text-zinc-700">
+                        {formatRelativeDate(order.createdAt)}
+                      </span>
+
+                      <span className="text-xs text-zinc-400">
+                        {new Intl.DateTimeFormat("pt-BR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        }).format(new Date(order.createdAt))}
+                      </span>
+                    </div>
                   </TableCell>
 
                   <TableCell>
