@@ -249,7 +249,7 @@ export function TableOrders({
                 <TableRow key={order.id}>
                   <TableCell className="px-6 py-3">
                     <div className="flex flex-col text-start">
-                      <span className="text-sm font-semibold">
+                      <span className="text-sm font-medium">
                         {order.customerName}
                       </span>
 
