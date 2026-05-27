@@ -104,12 +104,10 @@ function RouteComponent() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button
-            className="w-full cursor-pointer gap-2 lg:w-auto"
-            onClick={() => handleCreate()}
-          >
-            <CirclePlus className="size-4" />
-            Novo pedido
+          <Button className="gap-2 rounded-xl" onClick={() => handleCreate()}>
+            <CirclePlus size={14} />
+
+            <span className="text-xs">Novo pedido</span>
           </Button>
         </div>
         <div className="mt-8 w-full overflow-x-auto">
