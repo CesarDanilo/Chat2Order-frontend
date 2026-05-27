@@ -550,7 +550,7 @@ export function DrawerOrders({
                           <Label className="text-sm font-medium">Produto</Label>
 
                           <Input
-                            placeholder="Pizza Grande"
+                            placeholder="Camiseta "
                             value={item.productName}
                             onChange={(e) =>
                               updateItem(index, "productName", e.target.value)
