@@ -29,6 +29,11 @@ function DashboardPage() {
   const [pendingOrders, setPendingOrders] = useState(0);
 
   const [cancelledOrders, setCancelledOrders] = useState(0);
+  const [recentOrders, setRecentOrders] = useState([]);
+
+  function UpperCaseStatus(status: string) {
+    return status.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
 
   async function loadDashboard() {
     try {
@@ -59,6 +64,15 @@ function DashboardPage() {
 
       // CANCELADOS
       const cancelled = orders.filter((order) => order.status === "CANCELADO");
+
+      const sortedOrders = orders.sort((a, b) => {
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+
+      const recent = sortedOrders.slice(0, 3);
+      setRecentOrders(recent);
 
       setOrdersToday(todayOrders.length);
 
@@ -177,25 +191,18 @@ function DashboardPage() {
               Operação recente
             </CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-2">
-            <RecentOrder
-              customer="Carlos Henrique"
-              total="R$ 128,00"
-              status="Pendente"
-            />
-
-            <RecentOrder
-              customer="Douglas"
-              total="R$ 89,90"
-              status="Concluído"
-            />
-
-            <RecentOrder
-              customer="Amanda"
-              total="R$ 54,00"
-              status="Cancelado"
-            />
+            {recentOrders.map((item) => (
+              <RecentOrder
+                customer={item.customerName}
+                total={item.total}
+                status={
+                  item.status === "CONCLUIDO"
+                    ? "Concluído"
+                    : UpperCaseStatus(item.status.toLowerCase())
+                }
+              />
+            ))}
           </CardContent>
         </Card>
       </main>
@@ -327,7 +334,7 @@ function RecentOrder({ customer, total, status }: RecentOrderProps) {
         <span className="text-xs text-zinc-500">{status}</span>
       </div>
 
-      <span className="text-sm font-semibold">{total}</span>
+      <span className="text-sm font-semibold">R$ {total}</span>
     </div>
   );
 }
