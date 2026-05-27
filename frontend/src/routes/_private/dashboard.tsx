@@ -13,21 +13,87 @@ import {
   ShoppingBag,
 } from "lucide-react";
 
+import { OrderService } from "@/services/orders-services";
+
+import { useEffect, useState } from "react";
+
 export const Route = createFileRoute("/_private/dashboard")({
   component: DashboardPage,
 });
 
 function DashboardPage() {
+  const [ordersToday, setOrdersToday] = useState(0);
+
+  const [recipeToday, setRecipeToday] = useState(0);
+
+  const [pendingOrders, setPendingOrders] = useState(0);
+
+  const [cancelledOrders, setCancelledOrders] = useState(0);
+
+  async function loadDashboard() {
+    try {
+      const orderService = new OrderService();
+
+      const orders = await orderService.read();
+
+      const today = new Date();
+
+      // PEDIDOS DE HOJE
+      const todayOrders = orders.filter((order) => {
+        const createdAt = new Date(order.createdAt);
+
+        return (
+          createdAt.getDate() === today.getDate() &&
+          createdAt.getMonth() === today.getMonth() &&
+          createdAt.getFullYear() === today.getFullYear()
+        );
+      });
+
+      // RECEITA
+      const totalRecipe = todayOrders.reduce((acc, order) => {
+        return acc + order.total;
+      }, 0);
+
+      // PENDENTES
+      const pending = orders.filter((order) => order.status === "PENDENTE");
+
+      // CANCELADOS
+      const cancelled = orders.filter((order) => order.status === "CANCELADO");
+
+      setOrdersToday(todayOrders.length);
+
+      setRecipeToday(totalRecipe);
+
+      setPendingOrders(pending.length);
+
+      setCancelledOrders(cancelled.length);
+    } catch (error) {
+      console.log(error);
+
+      setOrdersToday(0);
+
+      setRecipeToday(0);
+
+      setPendingOrders(0);
+
+      setCancelledOrders(0);
+    }
+  }
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
   return (
     <div className="flex flex-col items-center">
       <Header title="Dashboard" subtitle="Visão geral da operação" />
 
-      <main className="space-y-4 p-4 w-10/12 px-4 py-8 md:px-6 lg:px-8">
+      <main className="w-10/12 space-y-4 px-4 py-8 md:px-6 lg:px-8">
         {/* KPI */}
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             title="Receita Hoje"
-            value="R$ 4.850"
+            value={`R$ ${recipeToday.toFixed(2)}`}
             trend="+12%"
             positive
             icon={<DollarSign size={14} />}
@@ -40,7 +106,7 @@ function DashboardPage() {
 
           <MetricCard
             title="Pedidos Hoje"
-            value="128"
+            value={ordersToday}
             trend="+8%"
             positive
             icon={<ShoppingBag size={14} />}
@@ -53,7 +119,7 @@ function DashboardPage() {
 
           <MetricCard
             title="Pendentes"
-            value="14"
+            value={pendingOrders}
             trend="-2%"
             positive
             icon={<Clock3 size={14} />}
@@ -66,7 +132,7 @@ function DashboardPage() {
 
           <MetricCard
             title="Cancelamentos"
-            value="9"
+            value={cancelledOrders}
             trend="+5%"
             positive={false}
             icon={<AlertTriangle size={14} />}
@@ -87,14 +153,20 @@ function DashboardPage() {
           </CardHeader>
 
           <CardContent className="space-y-2">
-            <AlertItem
-              text="12 pedidos aguardando há mais de 20 minutos"
-              danger
-            />
+            {pendingOrders > 10 && (
+              <AlertItem
+                text={`${pendingOrders} pedidos pendentes aguardando atendimento`}
+                danger
+              />
+            )}
 
-            <AlertItem text="Taxa de cancelamento aumentou hoje" danger />
+            {cancelledOrders > 5 && (
+              <AlertItem text="Taxa de cancelamento aumentou hoje" danger />
+            )}
 
-            <AlertItem text="Tempo médio de entrega melhorou 8%" />
+            {ordersToday > 0 && (
+              <AlertItem text={`${ordersToday} pedidos registrados hoje`} />
+            )}
           </CardContent>
         </Card>
 
@@ -133,10 +205,15 @@ function DashboardPage() {
 
 interface MetricCardProps {
   title: string;
-  value: string;
+
+  value: string | number;
+
   trend: string;
+
   positive?: boolean;
+
   icon: React.ReactNode;
+
   iconClassName?: string;
 }
 
@@ -149,13 +226,7 @@ function MetricCard({
   iconClassName,
 }: MetricCardProps) {
   return (
-    <Card
-      className="
-        rounded-2xl
-        border-zinc-200
-        shadow-none
-      "
-    >
+    <Card className="rounded-2xl border-zinc-200 shadow-none">
       <CardContent className="flex items-center justify-between p-4">
         <div className="space-y-1">
           <p className="text-xs text-zinc-500">{title}</p>
@@ -198,6 +269,7 @@ function MetricCard({
 
 interface AlertItemProps {
   text: string;
+
   danger?: boolean;
 }
 
@@ -229,7 +301,9 @@ function AlertItem({ text, danger = false }: AlertItemProps) {
 
 interface RecentOrderProps {
   customer: string;
+
   total: string;
+
   status: string;
 }
 
