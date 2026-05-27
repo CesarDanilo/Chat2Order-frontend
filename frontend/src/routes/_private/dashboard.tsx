@@ -19,29 +19,23 @@ export const Route = createFileRoute("/_private/dashboard")({
 
 function DashboardPage() {
   return (
-    <div className="flex flex-col">
-      <Header
-        title="Dashboard"
-        subtitle="Visão geral da operação da sua loja"
-      />
+    <div className="flex flex-col items-center">
+      <Header title="Dashboard" subtitle="Visão geral da operação" />
 
-      <main className="space-y-6 p-6">
+      <main className="space-y-4 p-4 w-10/12 px-4 py-8 md:px-6 lg:px-8">
         {/* KPI */}
-        <section
-          className="
-            grid
-            grid-cols-1
-            gap-4
-            md:grid-cols-2
-            xl:grid-cols-4
-          "
-        >
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             title="Receita Hoje"
             value="R$ 4.850"
             trend="+12%"
             positive
-            icon={<DollarSign size={16} />}
+            icon={<DollarSign size={14} />}
+            iconClassName="
+              border-green-200
+              bg-green-50
+              text-green-700
+            "
           />
 
           <MetricCard
@@ -49,7 +43,12 @@ function DashboardPage() {
             value="128"
             trend="+8%"
             positive
-            icon={<ShoppingBag size={16} />}
+            icon={<ShoppingBag size={14} />}
+            iconClassName="
+              border-blue-200
+              bg-blue-50
+              text-blue-700
+            "
           />
 
           <MetricCard
@@ -57,7 +56,12 @@ function DashboardPage() {
             value="14"
             trend="-2%"
             positive
-            icon={<Clock3 size={16} />}
+            icon={<Clock3 size={14} />}
+            iconClassName="
+              border-amber-200
+              bg-amber-50
+              text-amber-700
+            "
           />
 
           <MetricCard
@@ -65,57 +69,44 @@ function DashboardPage() {
             value="9"
             trend="+5%"
             positive={false}
-            icon={<AlertTriangle size={16} />}
+            icon={<AlertTriangle size={14} />}
+            iconClassName="
+              border-red-200
+              bg-red-50
+              text-red-700
+            "
           />
         </section>
 
         {/* ALERTAS */}
-        <section className="grid gap-4 lg:grid-cols-2">
-          <Card className="rounded-3xl border-zinc-200 shadow-none">
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold">
-                Alertas Operacionais
-              </CardTitle>
-            </CardHeader>
+        <Card className="rounded-2xl border-zinc-200 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Alertas operacionais
+            </CardTitle>
+          </CardHeader>
 
-            <CardContent className="space-y-3 text-sm">
-              <AlertItem
-                text="12 pedidos aguardando há mais de 20 minutos"
-                danger
-              />
+          <CardContent className="space-y-2">
+            <AlertItem
+              text="12 pedidos aguardando há mais de 20 minutos"
+              danger
+            />
 
-              <AlertItem text="Taxa de cancelamento aumentou hoje" danger />
+            <AlertItem text="Taxa de cancelamento aumentou hoje" danger />
 
-              <AlertItem text="Tempo médio de entrega melhorou 8%" />
-            </CardContent>
-          </Card>
+            <AlertItem text="Tempo médio de entrega melhorou 8%" />
+          </CardContent>
+        </Card>
 
-          <Card className="rounded-3xl border-zinc-200 shadow-none">
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold">
-                IA & Automação
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <AutomationMetric label="Pedidos importados IA" value="92%" />
-
-              <AutomationMetric label="Precisão da IA" value="96%" />
-
-              <AutomationMetric label="Revisões manuais" value="4%" />
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* PEDIDOS RECENTES */}
-        <Card className="rounded-3xl border-zinc-200 shadow-none">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold">
+        {/* OPERAÇÃO RECENTE */}
+        <Card className="rounded-2xl border-zinc-200 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
               Operação recente
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2">
             <RecentOrder
               customer="Carlos Henrique"
               total="R$ 128,00"
@@ -146,6 +137,7 @@ interface MetricCardProps {
   trend: string;
   positive?: boolean;
   icon: React.ReactNode;
+  iconClassName?: string;
 }
 
 function MetricCard({
@@ -154,26 +146,21 @@ function MetricCard({
   trend,
   positive = true,
   icon,
+  iconClassName,
 }: MetricCardProps) {
   return (
     <Card
       className="
-        rounded-3xl
+        rounded-2xl
         border-zinc-200
         shadow-none
-        transition-all
-        duration-200
-        hover:border-zinc-300
-        hover:bg-zinc-50/50
       "
     >
-      <CardContent className="flex items-center justify-between p-5">
+      <CardContent className="flex items-center justify-between p-4">
         <div className="space-y-1">
-          <p className="text-sm text-zinc-500">{title}</p>
+          <p className="text-xs text-zinc-500">{title}</p>
 
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            {value}
-          </h2>
+          <h2 className="text-xl font-semibold tracking-tight">{value}</h2>
 
           <div
             className={`
@@ -181,29 +168,26 @@ function MetricCard({
               items-center
               gap-1
               text-xs
-              font-medium
-              ${positive ? "text-emerald-600" : "text-red-500"}
+              ${positive ? "text-green-600" : "text-red-600"}
             `}
           >
-            {positive ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+            {positive ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
 
-            {trend}
+            <span>{trend}</span>
           </div>
         </div>
 
         <div
-          className="
+          className={`
             flex
-            h-11
-            w-11
+            h-9
+            w-9
             items-center
             justify-center
-            rounded-2xl
+            rounded-xl
             border
-            border-zinc-200
-            bg-zinc-100
-            text-zinc-700
-          "
+            ${iconClassName}
+          `}
         >
           {icon}
         </div>
@@ -224,10 +208,11 @@ function AlertItem({ text, danger = false }: AlertItemProps) {
         flex
         items-center
         gap-2
-        rounded-2xl
+        rounded-xl
         border
         px-3
-        py-3
+        py-2
+        text-xs
         ${
           danger
             ? "border-red-200 bg-red-50 text-red-700"
@@ -235,24 +220,9 @@ function AlertItem({ text, danger = false }: AlertItemProps) {
         }
       `}
     >
-      <AlertTriangle size={14} />
+      <AlertTriangle size={12} />
 
-      <span className="text-xs font-medium">{text}</span>
-    </div>
-  );
-}
-
-interface AutomationMetricProps {
-  label: string;
-  value: string;
-}
-
-function AutomationMetric({ label, value }: AutomationMetricProps) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-zinc-500">{label}</span>
-
-      <span className="text-sm font-semibold text-zinc-900">{value}</span>
+      <span>{text}</span>
     </div>
   );
 }
@@ -270,23 +240,20 @@ function RecentOrder({ customer, total, status }: RecentOrderProps) {
         flex
         items-center
         justify-between
-        rounded-2xl
+        rounded-xl
         border
         border-zinc-200
-        px-4
+        px-3
         py-3
-        transition-all
-        duration-200
-        hover:bg-zinc-50
       "
     >
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-zinc-900">{customer}</span>
+        <span className="text-sm font-medium">{customer}</span>
 
         <span className="text-xs text-zinc-500">{status}</span>
       </div>
 
-      <span className="text-sm font-semibold text-zinc-900">{total}</span>
+      <span className="text-sm font-semibold">{total}</span>
     </div>
   );
 }
