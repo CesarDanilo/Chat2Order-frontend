@@ -65,7 +65,7 @@ function RouteComponent() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center min-h-screen w-full bg-background">
+    <div className="flex flex-col items-center min-h-screen w-full bg-zinc-50">
       <DrawerOrders
         open={open}
         onOpenChange={setOpen}

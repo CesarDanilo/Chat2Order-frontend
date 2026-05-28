@@ -99,7 +99,7 @@ function DashboardPage() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center bg-zinc-50 h-screen">
       <Header title="Dashboard" subtitle="Visão geral da operação" />
 
       <main className="w-10/12 space-y-4 px-4 py-8 md:px-6 lg:px-8">
