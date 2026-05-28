@@ -22,7 +22,7 @@ export interface Order {
 type CreateOrderDTO = Omit<Order, "status">;
 
 export class OrderService {
-  private baseURL = "http://127.0.0.1:3000/api/order";
+  private baseURL = `${import.meta.env.VITE_API_URL}/api/order`;
 
   //Create order
   async create(data: CreateOrderDTO): Promise<Order> {

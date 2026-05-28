@@ -23,7 +23,7 @@ export interface UserCreate {
 }
 
 export class UserService {
-  private baseURL = "http://127.0.0.1:3000/api/user";
+  private baseURL = `${import.meta.env.VITE_API_URL}/api/user`;
 
   // =========================
   // GET TOKEN

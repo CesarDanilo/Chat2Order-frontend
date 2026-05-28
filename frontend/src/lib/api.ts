@@ -1,34 +1,28 @@
-const API_URL = "http://127.0.0.1:3000/api"
+const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 
 type RequestOptions = RequestInit & {
-  auth?: boolean
-}
+  auth?: boolean;
+};
 
-export async function api(
-  endpoint: string,
-  options?: RequestOptions
-) {
-  const token = localStorage.getItem("token")
+export async function api(endpoint: string, options?: RequestOptions) {
+  const token = localStorage.getItem("token");
 
-  const headers = new Headers(options?.headers)
+  const headers = new Headers(options?.headers);
 
-  headers.set("Content-Type", "application/json")
+  headers.set("Content-Type", "application/json");
 
   if (options?.auth && token) {
-    headers.set("Authorization", `Bearer ${token}`)
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(
-    `${API_URL}${endpoint}`,
-    {
-      ...options,
-      headers,
-    }
-  )
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
 
   if (!response.ok) {
-    throw new Error("Erro na requisição")
+    throw new Error("Erro na requisição");
   }
 
-  return response.json()
+  return response.json();
 }
