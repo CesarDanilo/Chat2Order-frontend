@@ -3,7 +3,6 @@ import {
   ShoppingBag,
   Users,
   User,
-  Settings,
 } from "lucide-react";
 
 import { Link } from "@tanstack/react-router";

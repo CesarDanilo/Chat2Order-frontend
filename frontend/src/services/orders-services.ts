@@ -72,7 +72,7 @@ export class OrderService {
     return order;
   }
 
-  async readById(orderId: string): Promise<Order[]> {
+  async readById(orderId: string): Promise<Order> {
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -90,12 +90,12 @@ export class OrderService {
 
       throw new Error(error.message || "Erro ao buscar pedidos");
     }
-    const order: Order[] = await response.json();
+    const order: Order = await response.json();
     return order;
   }
 
   //Update order
-  async update(orderId: string, data: CreateOrderInput) {
+  async update(orderId: string, data: CreateOrderDTO) {
     const token = localStorage.getItem("token");
 
     if (!token) {

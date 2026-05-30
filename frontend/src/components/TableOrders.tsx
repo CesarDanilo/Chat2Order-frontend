@@ -1,3 +1,4 @@
+import type React from "react";
 import {
   Table,
   TableBody,
@@ -18,12 +19,10 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { DrawerOrders } from "@/components/DrawerOrders";
 import { useState, useEffect } from "react";
 
 type AlertType = "success" | "error";
@@ -34,6 +33,18 @@ interface IFilterType {
   search: string;
   isLoading: boolean;
   onDeleteOrder: (id: string) => void;
+
+  setDrawerMode: React.Dispatch<
+    React.SetStateAction<"create" | "edit">
+  >;
+
+  setSelectedOrderId: React.Dispatch<
+    React.SetStateAction<string | null>
+  >;
+
+  setOpen: React.Dispatch<
+    React.SetStateAction<boolean>
+  >;
 }
 
 export function TableOrders({
@@ -67,15 +78,6 @@ export function TableOrders({
       return () => clearTimeout(timer);
     }
   }, [alert.show]);
-
-  function formatDate(date?: string) {
-    if (!date) return "-";
-
-    return new Intl.DateTimeFormat("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short",
-    }).format(new Date(date));
-  }
 
   const statusColors: Record<string, string> = {
     PENDENTE:
@@ -254,7 +256,7 @@ export function TableOrders({
                       </span>
 
                       <span className="text-zinc-500 text-xs">
-                        #{order.id.slice(0, 8)}
+                        #{order.id?.slice(0, 8) ?? "-"}
                       </span>
                     </div>
                   </TableCell>
@@ -327,7 +329,7 @@ export function TableOrders({
                   </TableCell>
 
                   <TableCell className="px-6 py-3 text-end text-xs">
-                    R$ {order.total.toFixed(2)}
+                    R$ {order.total?.toFixed(2) ?? "0.00"}
                   </TableCell>
 
                   <TableCell className="px-6 text-end">
@@ -340,7 +342,7 @@ export function TableOrders({
                         {new Intl.DateTimeFormat("pt-BR", {
                           dateStyle: "short",
                           timeStyle: "short",
-                        }).format(new Date(order.createdAt))}
+                        }).format(new Date(order.createdAt ?? Date.now()))}
                       </span>
                     </div>
                   </TableCell>
@@ -357,7 +359,10 @@ export function TableOrders({
                           <DropdownMenuItem
                             onClick={() => {
                               (document.activeElement as HTMLElement)?.blur();
-                              handleEdit(order.id);
+
+                              if (order.id) {
+                                handleEdit(order.id);
+                              }
                             }}
                           >
                             Editar pedido
@@ -369,7 +374,11 @@ export function TableOrders({
                         {/* EXCLUIR */}
                         <DropdownMenuItem
                           className="text-red-500"
-                          onClick={() => handleDelete(order.id)}
+                          onClick={() => {
+                            if (order.id) {
+                              handleDelete(order.id);
+                            }
+                          }}
                         >
                           Excluir
                         </DropdownMenuItem>

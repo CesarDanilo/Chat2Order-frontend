@@ -60,7 +60,12 @@ function UsersPage() {
 
       const response = await userService.read();
 
-      setUsers(response);
+      setUsers(
+        response.map((user) => ({
+          ...user,
+          admin: user.admin ?? false,
+        }))
+      );
     } catch (error: any) {
       console.log(error);
     }

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 import { OrderService } from "@/services/orders-services";
-
+import type { Order } from "@/services/orders-services";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_private/dashboard")({
@@ -29,7 +29,7 @@ function DashboardPage() {
   const [pendingOrders, setPendingOrders] = useState(0);
 
   const [cancelledOrders, setCancelledOrders] = useState(0);
-  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
   function UpperCaseStatus(status: string) {
     return status.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -45,6 +45,7 @@ function DashboardPage() {
 
       // PEDIDOS DE HOJE
       const todayOrders = orders.filter((order) => {
+        if (!order.createdAt) return false;
         const createdAt = new Date(order.createdAt);
 
         return (
@@ -65,9 +66,10 @@ function DashboardPage() {
       // CANCELADOS
       const cancelled = orders.filter((order) => order.status === "CANCELADO");
 
-      const sortedOrders = orders.sort((a, b) => {
+      const sortedOrders = [...orders].sort((a, b) => {
         return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt ?? 0).getTime() -
+          new Date(a.createdAt ?? 0).getTime()
         );
       });
 
@@ -309,7 +311,7 @@ function AlertItem({ text, danger = false }: AlertItemProps) {
 interface RecentOrderProps {
   customer: string;
 
-  total: string;
+  total: number;
 
   status: string;
 }
@@ -334,7 +336,7 @@ function RecentOrder({ customer, total, status }: RecentOrderProps) {
         <span className="text-xs text-zinc-500">{status}</span>
       </div>
 
-      <span className="text-sm font-semibold">R$ {total}</span>
+      <span className="text-sm font-semibold">R$ {total.toFixed(2)}</span>
     </div>
   );
 }

@@ -169,7 +169,7 @@ export function DrawerUsers({
 
       setEmail(user.email);
 
-      setAdmin(user.admin);
+      setAdmin(user.admin ?? false);
     } catch (error) {
       setAlert({
         show: true,
