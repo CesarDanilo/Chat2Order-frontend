@@ -4,9 +4,7 @@ import {
   Users,
   User,
 } from "lucide-react";
-
 import { Link } from "@tanstack/react-router";
-
 import {
   Sidebar,
   SidebarContent,
@@ -17,59 +15,34 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-
 import { useAuth } from "@/context/auth-context";
-
 import logo from "../public/icon.png";
+
+const baseItems = [
+  { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
+  { title: "Orders",    icon: ShoppingBag,     url: "/orders"    },
+  { title: "Profile",   icon: User,            url: "/profile"   },
+];
+
+const adminItems = [
+  { title: "Users", icon: Users, url: "/users" },
+];
 
 export function AppSideBar() {
   const { user } = useAuth();
 
-  // =========================
-  // MENU ITEMS
-  // =========================
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      icon: LayoutDashboard,
-      url: "/dashboard",
-    },
-
-    {
-      title: "Orders",
-      icon: ShoppingBag,
-      url: "/orders",
-    },
-
-    // SOMENTE ADMIN
-    ...(user?.admin === true
-      ? [
-          {
-            title: "Users",
-            icon: Users,
-            url: "/users",
-          },
-        ]
-      : []),
-
-    {
-      title: "Profile",
-      icon: User,
-      url: "/profile",
-    },
-  ];
+  const menuItems = user?.admin === true
+    ? [...baseItems.slice(0, 2), ...adminItems, baseItems[2]]
+    : baseItems;
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader className="flex h-16 flex-row items-center justify-start gap-x-3 border-b px-6">
         <img className="w-8 shrink-0" src={logo} alt="logo" />
-
-        <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+        <div className="flex flex-col">
           <span className="text-base font-semibold tracking-tight">
             Chat2Order
           </span>
-
           <span className="text-xs text-zinc-500">v1.0 • MVP</span>
         </div>
       </SidebarHeader>
@@ -86,7 +59,6 @@ export function AppSideBar() {
                   <SidebarMenuButton asChild className="rounded-none px-6">
                     <Link to={item.url}>
                       <item.icon />
-
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
