@@ -20,8 +20,9 @@ import logo from "../public/icon.png";
 
 const baseItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
-  { title: "Orders",    icon: ShoppingBag,     url: "/orders"    },
-  { title: "Profile",   icon: User,            url: "/profile"   },
+  { title: "Orders", icon: ShoppingBag, url: "/orders" },
+  { title: "Profile", icon: User, url: "/profile" },
+  { title: "Products", icon: ShoppingBag, url: "/products" },
 ];
 
 const adminItems = [
@@ -32,7 +33,7 @@ export function AppSideBar() {
   const { user } = useAuth();
 
   const menuItems = user?.admin === true
-    ? [...baseItems.slice(0, 2), ...adminItems, baseItems[2]]
+    ? [...baseItems.slice(0, 2), ...adminItems, baseItems[3]]
     : baseItems;
 
   return (
