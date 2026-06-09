@@ -33,7 +33,7 @@ export function AppSideBar() {
   const { user } = useAuth();
 
   const menuItems = user?.admin === true
-    ? [...baseItems.slice(0, 2), ...adminItems, baseItems[3]]
+    ? [...baseItems.slice(0, 3), ...adminItems, baseItems[3]]
     : baseItems;
 
   return (
