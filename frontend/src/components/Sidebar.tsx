@@ -3,6 +3,7 @@ import {
   ShoppingBag,
   Users,
   User,
+  PackageSearch
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -20,9 +21,9 @@ import logo from "../public/icon.png";
 
 const baseItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
-  { title: "Orders", icon: ShoppingBag, url: "/orders" },
-  { title: "Profile", icon: User, url: "/profile" },
+  { title: "Orders", icon: PackageSearch, url: "/orders" },
   { title: "Products", icon: ShoppingBag, url: "/products" },
+  { title: "Profile", icon: User, url: "/profile" },
 ];
 
 const adminItems = [
