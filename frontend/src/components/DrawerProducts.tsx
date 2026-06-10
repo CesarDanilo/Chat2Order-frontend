@@ -21,43 +21,90 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import logo from "../public/icon.png";
+import { ProductService } from "@/services/products-services";
 
 interface DrawerProductsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "create" | "edit";
   productId: string | null;
+  onSuccess?: () => void;
 }
+
+const EMPTY_FORM = {
+  name: "",
+  category: "",
+  description: "",
+  price: 0,
+  available: true,
+};
 
 export function DrawerProducts({
   open,
   onOpenChange,
   mode,
   productId,
+  onSuccess,
 }: DrawerProductsProps) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState(0);
-  const [stock, setStock] = useState(0);
-  const [status, setStatus] = useState<"ATIVO" | "RASCUNHO" | "ARQUIVADO">("ATIVO");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const service = new ProductService();
 
   useEffect(() => {
-    if (open && mode === "create") clearForm();
-  }, [open, mode]);
+    if (!open) return;
 
-  function clearForm() {
-    setName("");
-    setCategory("");
-    setDescription("");
-    setPrice(0);
-    setStock(0);
-    setStatus("ATIVO");
+    if (mode === "create") {
+      setForm(EMPTY_FORM);
+      setError(null);
+      return;
+    }
+
+    if (mode === "edit" && productId) {
+      fetchProduct(productId);
+    }
+  }, [open, mode, productId]);
+
+  async function fetchProduct(id: string) {
+    setLoading(true);
+    setError(null);
+    try {
+      const product = await service.readById(id);
+      setForm({
+        name: product.name,
+        category: product.category,
+        description: product.description,
+        price: product.price,
+        available: product.available,
+      });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleSave() {
-    // TODO: integrar com ProductService
-    onOpenChange(false);
+  function handleChange(field: keyof typeof EMPTY_FORM, value: string | number | boolean) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleSave() {
+    setLoading(true);
+    setError(null);
+    try {
+      if (mode === "create") {
+        await service.create(form);
+      } else if (mode === "edit" && productId) {
+        await service.update(productId, form);
+      }
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -87,6 +134,12 @@ export function DrawerProducts({
         </DrawerHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
+          {error && (
+            <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-600 border border-red-200">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-6">
             <Card>
               <h3 className="px-5 pt-5 text-lg font-semibold">Informações do produto</h3>
@@ -95,8 +148,8 @@ export function DrawerProducts({
                   <Label className="text-sm font-medium">Nome</Label>
                   <Input
                     placeholder="Ex. Camiseta Básica"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={form.name}
+                    onChange={(e) => handleChange("name", e.target.value)}
                   />
                 </div>
 
@@ -105,23 +158,22 @@ export function DrawerProducts({
                     <Label className="text-sm font-medium">Categoria</Label>
                     <Input
                       placeholder="Ex. Vestuário"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
+                      value={form.category}
+                      onChange={(e) => handleChange("category", e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Status</Label>
                     <Select
-                      value={status}
-                      onValueChange={(v) => setStatus(v as "ATIVO" | "RASCUNHO" | "ARQUIVADO")}
+                      value={form.available ? "ATIVO" : "ARQUIVADO"}
+                      onValueChange={(v) => handleChange("available", v === "ATIVO")}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ATIVO">Ativo</SelectItem>
-                        <SelectItem value="RASCUNHO">Rascunho</SelectItem>
                         <SelectItem value="ARQUIVADO">Arquivado</SelectItem>
                       </SelectContent>
                     </Select>
@@ -132,8 +184,8 @@ export function DrawerProducts({
                   <Label className="text-sm font-medium">Descrição</Label>
                   <Textarea
                     placeholder="Descreva o produto..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    value={form.description}
+                    onChange={(e) => handleChange("description", e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -146,18 +198,8 @@ export function DrawerProducts({
                   <Input
                     type="number"
                     placeholder="0.00"
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Estoque</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={stock}
-                    onChange={(e) => setStock(Number(e.target.value))}
+                    value={form.price}
+                    onChange={(e) => handleChange("price", Number(e.target.value))}
                   />
                 </div>
               </CardContent>
@@ -167,7 +209,10 @@ export function DrawerProducts({
               <CardContent className="flex items-center justify-between p-5">
                 <span className="text-lg font-semibold">Valor unitário</span>
                 <span className="text-2xl font-bold">
-                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price)}
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(form.price)}
                 </span>
               </CardContent>
             </Card>
@@ -175,11 +220,13 @@ export function DrawerProducts({
         </div>
 
         <DrawerFooter className="border-t">
-          <Button className="w-full" onClick={handleSave}>
-            {mode === "create" ? "Salvar Produto" : "Salvar Alterações"}
+          <Button className="w-full" onClick={handleSave} disabled={loading}>
+            {loading ? "Salvando..." : mode === "create" ? "Salvar Produto" : "Salvar Alterações"}
           </Button>
           <DrawerClose asChild>
-            <Button variant="outline">Cancelar</Button>
+            <Button variant="outline" disabled={loading}>
+              Cancelar
+            </Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

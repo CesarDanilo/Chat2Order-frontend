@@ -19,15 +19,16 @@ type AlertType = "success" | "error";
 interface ITableProducts {
   filter: string;
   search: string;
+  refreshKey: number;
   onDeleteProduct: (id: string) => void;
   setDrawerMode: React.Dispatch<React.SetStateAction<"create" | "edit">>;
   setSelectedProductId: React.Dispatch<React.SetStateAction<string | null>>;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
 export function TableProducts({
   filter,
   search,
+  refreshKey,
   onDeleteProduct,
   setDrawerMode,
   setSelectedProductId,
@@ -44,6 +45,7 @@ export function TableProducts({
   // Busca os produtos ao montar o componente
   useEffect(() => {
     async function fetchProducts() {
+      setIsLoading(true);
       try {
         const service = new ProductService();
         const data = await service.read();
@@ -55,7 +57,7 @@ export function TableProducts({
       }
     }
     fetchProducts();
-  }, []);
+  }, [refreshKey]);
 
   // Esconde o alerta após 3s
   useEffect(() => {
@@ -123,9 +125,8 @@ export function TableProducts({
       {alert.show && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-5">
           <Alert
-            className={`w-[350px] shadow-lg border ${
-              alert.type === "success" ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"
-            }`}
+            className={`w-[350px] shadow-lg border ${alert.type === "success" ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"
+              }`}
           >
             <AlertTitle>
               {alert.type === "success" ? "Sucesso!" : "Erro"}

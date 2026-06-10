@@ -5,12 +5,7 @@ import { CirclePlus, SearchIcon } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { TableProducts } from '@/components/TableProducts'
 import { DrawerProducts } from '@/components/DrawerProducts'
-
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 
@@ -24,11 +19,16 @@ function RouteComponent() {
   const [open, setOpen] = useState<boolean>(false)
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit'>('create')
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const handleCreate = () => {
     setDrawerMode('create')
     setSelectedProductId(null)
     setOpen(true)
+  }
+
+  const handleSuccess = () => {
+    setRefreshKey((prev) => prev + 1)
   }
 
   return (
@@ -38,6 +38,7 @@ function RouteComponent() {
         onOpenChange={setOpen}
         mode={drawerMode}
         productId={selectedProductId}
+        onSuccess={handleSuccess}
       />
 
       <Header title="Produtos" subtitle="Todos os produtos cadastrados" />
@@ -74,8 +75,7 @@ function RouteComponent() {
           <TableProducts
             filter={filter}
             search={search}
-            products={[]}
-            isLoading={false}
+            refreshKey={refreshKey}
             onDeleteProduct={() => {}}
             setDrawerMode={setDrawerMode}
             setSelectedProductId={setSelectedProductId}
