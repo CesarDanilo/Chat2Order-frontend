@@ -23,12 +23,27 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 // Icons
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import logo from "../public/icon.png";
 //Services
 import { OrderService } from "@/services/orders-services";
 //Types
 import z from "zod";
+
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ProductService, type Product } from "@/services/products-services";
 
 // Interfaces
 interface DrawerOrdersProps {
@@ -92,6 +107,8 @@ export function DrawerOrders({
   mode,
   orderId,
 }: DrawerOrdersProps) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -183,6 +200,13 @@ export function DrawerOrders({
       clearForm();
     }
   }, [open, mode]);
+
+  useEffect(() => {
+    if (open) {
+      const productService = new ProductService();
+      productService.read().then(setProducts).catch(() => { });
+    }
+  }, [open]);
 
   const clearForm = () => {
     setCustomerName("");
@@ -364,6 +388,18 @@ export function DrawerOrders({
     }
   }
 
+  const addProductFromSearch = (product: Product) => {
+    setItems((prev) => [
+      ...prev,
+      {
+        productName: product.name,
+        quantity: 1,
+        unitPrice: product.price,
+      },
+    ]);
+    setSearchOpen(false);
+  };
+
   return (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
       {alert.show && (
@@ -373,10 +409,9 @@ export function DrawerOrders({
               w-[350px]
               shadow-lg
               border
-              ${
-                alert.type === "success"
-                  ? "border-green-500 bg-green-50"
-                  : "border-red-500 bg-red-50"
+              ${alert.type === "success"
+                ? "border-green-500 bg-green-50"
+                : "border-red-500 bg-red-50"
               }
             `}
           >
@@ -530,16 +565,52 @@ export function DrawerOrders({
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="space-y-5 p-5">
+                <h3 className="font-semibold">Itens do Pedido</h3>
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Itens do Pedido</h3>
 
-                  <Button size="sm" variant="outline" onClick={addItem}>
-                    <Plus className="size-4" />
-                    Adicionar item
-                  </Button>
+                  <div className="flex gap-2">
+                    {/* Busca de produto cadastrado */}
+                    <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          <Search className="size-4" />
+                          Buscar produto
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-0" align="end">
+                        <Command>
+                          <CommandInput placeholder="Pesquisar produto..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {products
+                                .filter((p) => p.available)
+                                .map((product) => (
+                                  <CommandItem
+                                    key={product.id}
+                                    onSelect={() => addProductFromSearch(product)}
+                                    className="flex justify-between"
+                                  >
+                                    <span>{product.name}</span>
+                                    <span className="text-muted-foreground text-xs">
+                                      R$ {product.price.toFixed(2)}
+                                    </span>
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Inserção manual (já existia) */}
+                    <Button size="sm" variant="outline" onClick={addItem}>
+                      <Plus className="size-4" />
+                      Manual
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -548,56 +619,33 @@ export function DrawerOrders({
                       <div className="grid grid-cols-12 gap-3">
                         <div className="col-span-5 space-y-2">
                           <Label className="text-sm font-medium">Produto</Label>
-
                           <Input
-                            placeholder="Camiseta "
+                            placeholder="Nome do produto"
                             value={item.productName}
-                            onChange={(e) =>
-                              updateItem(index, "productName", e.target.value)
-                            }
+                            onChange={(e) => updateItem(index, "productName", e.target.value)}
                           />
                         </div>
 
                         <div className="col-span-3 space-y-2">
                           <Label className="text-sm font-medium">Qtd</Label>
-
                           <Input
                             type="number"
                             value={item.quantity}
-                            onChange={(e) =>
-                              updateItem(
-                                index,
-                                "quantity",
-                                Number(e.target.value),
-                              )
-                            }
-                            className="text-sm font-medium"
+                            onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
                           />
                         </div>
 
                         <div className="col-span-3 space-y-2">
                           <Label className="text-sm font-medium">Valor</Label>
-
                           <Input
                             type="number"
                             value={item.unitPrice}
-                            onChange={(e) =>
-                              updateItem(
-                                index,
-                                "unitPrice",
-                                Number(e.target.value),
-                              )
-                            }
-                            className="text-sm font-medium"
+                            onChange={(e) => updateItem(index, "unitPrice", Number(e.target.value))}
                           />
                         </div>
 
                         <div className="col-span-1 flex items-end mr-3">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => removeItem(index)}
-                          >
+                          <Button size="icon" variant="ghost" onClick={() => removeItem(index)}>
                             <Trash2 className="size-4 text-red-500" />
                           </Button>
                         </div>
