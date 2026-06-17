@@ -17,7 +17,7 @@ import { ProductService, type Product } from "@/services/products-services";
 type AlertType = "success" | "error";
 
 interface ITableProducts {
-  filter: string;
+  filter: 'all' | 'available' | 'unavailable'
   search: string;
   refreshKey: number;
   onDeleteProduct: (id: string) => void;
@@ -71,9 +71,9 @@ export function TableProducts({
     return products.filter((product) => {
       // filter: "Todos" | "Ativo" | "Inativo"
       const matchesFilter =
-        filter === "Todos" ||
-        (filter === "Ativo" && product.available) ||
-        (filter === "Inativo" && !product.available);
+        filter === 'all' ||
+        (filter === 'available' && product.available) ||
+        (filter === 'unavailable' && !product.available)
 
       const matchesSearch =
         product.name.toLowerCase().includes(search.toLowerCase()) ||
