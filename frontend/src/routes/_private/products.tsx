@@ -14,7 +14,7 @@ export const Route = createFileRoute('/_private/products')({
 })
 
 function RouteComponent() {
-  const [filter, setFilter] = useState<string>('Todos')
+  const [filter, setFilter] = useState<'all' | 'available' | 'unavailable'>('all')
   const [search, setSearch] = useState<string>('')
   const [open, setOpen] = useState<boolean>(false)
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit'>('create')
@@ -56,12 +56,24 @@ function RouteComponent() {
             </InputGroupAddon>
           </InputGroup>
 
-          <Tabs defaultValue="Todos" onValueChange={setFilter}>
+          <Tabs
+            defaultValue="all"
+            onValueChange={(value) =>
+              setFilter(value as 'all' | 'available' | 'unavailable')
+            }
+          >
             <TabsList className="w-full lg:w-auto">
-              <TabsTrigger value="Todos" className="text-xs">Todos</TabsTrigger>
-              <TabsTrigger value="ativo" className="text-xs">Ativos</TabsTrigger>
-              <TabsTrigger value="rascunho" className="text-xs">Rascunhos</TabsTrigger>
-              <TabsTrigger value="arquivado" className="text-xs">Arquivados</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs">
+                Todos
+              </TabsTrigger>
+
+              <TabsTrigger value="available" className="text-xs">
+                Disponível
+              </TabsTrigger>
+
+              <TabsTrigger value="unavailable" className="text-xs">
+                Indisponível
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -76,7 +88,7 @@ function RouteComponent() {
             filter={filter}
             search={search}
             refreshKey={refreshKey}
-            onDeleteProduct={() => {}}
+            onDeleteProduct={() => { }}
             setDrawerMode={setDrawerMode}
             setSelectedProductId={setSelectedProductId}
             setOpen={setOpen}
