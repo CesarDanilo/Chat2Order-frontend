@@ -97,4 +97,26 @@ export class ProductService {
         const product: Product = await response.json();
         return product;
     }
+
+    async delete(id: string) {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            throw new Error("Usuário não autenticado");
+        }
+
+        const response = await fetch(`${this.baseURL}/${id}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Erro ao deletar o produto");
+        }
+        const product: Product = await response.json();
+        return product;
+
+    }
 }

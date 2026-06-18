@@ -8,6 +8,8 @@ import { DrawerProducts } from '@/components/DrawerProducts'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { ProductService } from '@/services/products-services'
+
 
 export const Route = createFileRoute('/_private/products')({
   component: RouteComponent,
@@ -29,6 +31,11 @@ function RouteComponent() {
 
   const handleSuccess = () => {
     setRefreshKey((prev) => prev + 1)
+  }
+
+  function onDeleteProduct(id: string) {
+    const productService = new ProductService();
+    productService.delete(id);
   }
 
   return (
@@ -88,7 +95,7 @@ function RouteComponent() {
             filter={filter}
             search={search}
             refreshKey={refreshKey}
-            onDeleteProduct={() => { }}
+            onDeleteProduct={onDeleteProduct}
             setDrawerMode={setDrawerMode}
             setSelectedProductId={setSelectedProductId}
             setOpen={setOpen}
