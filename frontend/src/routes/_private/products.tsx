@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { CirclePlus, FunctionSquareIcon, SearchIcon } from 'lucide-react'
+import { CirclePlus, SearchIcon } from 'lucide-react'
 
 import { Header } from '@/components/Header'
 import { TableProducts } from '@/components/TableProducts'
