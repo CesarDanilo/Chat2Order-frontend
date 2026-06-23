@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -22,6 +24,8 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import logo from "../public/icon.png";
 import { ProductService } from "@/services/products-services";
+import { productKeys } from "@/lib/query-client";
+import { formatCurrency } from "@/lib/formatters";
 
 interface DrawerProductsProps {
   open: boolean;
@@ -51,6 +55,7 @@ export function DrawerProducts({
   const [error, setError] = useState<string | null>(null);
 
   const service = new ProductService();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!open) return;
@@ -95,13 +100,18 @@ export function DrawerProducts({
     try {
       if (mode === "create") {
         await service.create(form);
+        toast.success("Produto criado com sucesso.");
       } else if (mode === "edit" && productId) {
         await service.update(productId, form);
+        toast.success("Produto atualizado com sucesso.");
       }
+      await queryClient.invalidateQueries({ queryKey: productKeys.all });
       onSuccess?.();
       onOpenChange(false);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao salvar produto.";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -208,11 +218,8 @@ export function DrawerProducts({
             <Card>
               <CardContent className="flex items-center justify-between p-5">
                 <span className="text-lg font-semibold">Valor unitário</span>
-                <span className="text-2xl font-bold">
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(form.price)}
+                <span className="text-base font-semibold tabular-nums">
+                  {formatCurrency(form.price)}
                 </span>
               </CardContent>
             </Card>
