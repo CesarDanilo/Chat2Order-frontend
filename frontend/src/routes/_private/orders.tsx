@@ -1,125 +1,138 @@
-import { Header } from "@/components/Header";
-import { TableOrders } from "@/components/TableOrders";
-
-import { createFileRoute } from "@tanstack/react-router";
-
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { CirclePlus, SearchIcon } from "lucide-react";
+import { Topbar } from "@/components/layout/Topbar";
+import { OrderDrawer } from "@/features/orders/OrderDrawer";
+import { OrderTable } from "@/features/orders/OrderTable";
+import { Button } from "@/components/ui/button";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcuts";
+import {
+  useDeleteOrder,
+  useOrders,
+} from "@/hooks/queries/use-orders";
 
-import { Button } from "@/components/ui/button";
-
-import { CirclePlus, SearchIcon } from "lucide-react";
-
-import { useEffect, useState } from "react";
-import { DrawerOrders } from "@/components/DrawerOrders";
-import { OrderService, type Order } from "@/services/orders-services";
+type OrdersSearch = {
+  create?: boolean;
+};
 
 export const Route = createFileRoute("/_private/orders")({
-  component: RouteComponent,
+  validateSearch: (search: Record<string, unknown>): OrdersSearch => ({
+    create: search.create === true || search.create === "true",
+  }),
+  component: OrdersPage,
 });
 
-function RouteComponent() {
-  const [filter, setFilter] = useState<string>("Todos");
-  const [search, setSearch] = useState<string>("");
-  const [open, setOpen] = useState<boolean>(false);
+function OrdersPage() {
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { create } = Route.useSearch();
+
+  const [filter, setFilter] = useState("Todos");
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
-  const [isLoading, setIsLoading] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  const orderService = new OrderService();
+  const { data: orders = [], isLoading, isError, refetch } = useOrders();
+  const deleteOrder = useDeleteOrder();
 
-  const handleFilter = (value: string) => {
-    setFilter(value);
-  };
-
-  const handleCreate = () => {
+  function handleCreate() {
     setDrawerMode("create");
     setSelectedOrderId(null);
     setOpen(true);
-  };
-
-  async function loadOrders() {
-    try {
-      setIsLoading(true);
-      const data = await orderService.read();
-      setOrders(data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setIsLoading(false);
-    }
   }
 
-  function removeOrder(id: string) {
-    setOrders((prevOrders) => prevOrders.filter((order) => order.id !== id));
+  function handleEdit(id: string) {
+    setDrawerMode("edit");
+    setSelectedOrderId(id);
+    setOpen(true);
+  }
+
+  function handleDelete(id: string) {
+    deleteOrder.mutate(id);
   }
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    if (create) {
+      handleCreate();
+      navigate({ search: { create: undefined }, replace: true });
+    }
+  }, [create]);
+
+  useKeyboardShortcut("n", handleCreate, { meta: true, ctrl: true });
 
   return (
-    <div className="flex flex-col items-center min-h-screen w-full bg-zinc-50">
-      <DrawerOrders
+    <div className="flex min-h-full flex-col">
+      <OrderDrawer
         open={open}
         onOpenChange={setOpen}
-        refreshOrders={loadOrders}
         mode={drawerMode}
         orderId={selectedOrderId}
       />
 
-      <Header title="Pedidos" subtitle="Todos os pedidos importados" />
+      <Topbar
+        title="Pedidos"
+        subtitle="Montagem e acompanhamento de pedidos"
+        actions={
+          <Button
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            onClick={handleCreate}
+          >
+            <CirclePlus className="size-3.5" />
+            Novo pedido
+          </Button>
+        }
+      />
 
-      <div className="w-10/12 px-4 py-8 md:px-6 lg:px-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <InputGroup className="w-full lg:max-w-sm">
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 md:px-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <InputGroup className="h-8 w-full lg:max-w-xs">
             <InputGroupInput
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por cliente ou ID"
+              className="text-xs"
             />
             <InputGroupAddon>
-              <SearchIcon className="size-4" />
+              <SearchIcon className="size-3.5" />
             </InputGroupAddon>
           </InputGroup>
-          <Tabs defaultValue="Todos" onValueChange={handleFilter}>
-            <TabsList className="w-full lg:w-auto">
-              <TabsTrigger value="Todos" className="text-xs">
+
+          <Tabs value={filter} onValueChange={setFilter}>
+            <TabsList className="h-8">
+              <TabsTrigger value="Todos" className="px-2 text-xs">
                 Todos
               </TabsTrigger>
-              <TabsTrigger value="pendente" className="text-xs">
+              <TabsTrigger value="pendente" className="px-2 text-xs">
                 Pendentes
               </TabsTrigger>
-              <TabsTrigger value="concluido" className="text-xs">
+              <TabsTrigger value="concluido" className="px-2 text-xs">
                 Concluídos
               </TabsTrigger>
-              <TabsTrigger value="cancelado" className="text-xs">
+              <TabsTrigger value="cancelado" className="px-2 text-xs">
                 Cancelados
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button className="gap-2 rounded-xl" onClick={() => handleCreate()}>
-            <CirclePlus size={14} />
-
-            <span className="text-xs">Novo pedido</span>
-          </Button>
         </div>
-        <div className="mt-8 w-full overflow-x-auto">
-          <TableOrders
+
+        <div className="mt-4">
+          <OrderTable
+            orders={orders}
             filter={filter}
             search={search}
-            orders={orders}
             isLoading={isLoading}
-            onDeleteOrder={removeOrder}
-            setDrawerMode={setDrawerMode}
-            setSelectedOrderId={setSelectedOrderId}
-            setOpen={setOpen}
+            isError={isError}
+            onRetry={() => refetch()}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onCreate={handleCreate}
           />
         </div>
       </div>

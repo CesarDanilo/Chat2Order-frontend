@@ -1,352 +1,209 @@
-// src/pages/Login.tsx
-
 import { useState } from "react";
 import { z } from "zod";
-
 import { useNavigate } from "@tanstack/react-router";
-
+import { toast } from "sonner";
 import { useAuth } from "@/context/auth-context";
-
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { Label } from "@/components/ui/label";
 import icon from "../public/icon.png";
 import { loginService, registerService } from "@/services/auth-services";
 
+const loginSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres"),
+});
+
+const registerSchema = z
+  .object({
+    name: z.string().min(3, "O nome deve ter no mínimo 3 caracteres"),
+    email: z.string().email("Email inválido"),
+    password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres"),
+    confirmPassword: z.string().min(8),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-[10px] text-destructive">{message}</p>;
+}
+
 export function Login() {
-
-  // =========================
-  // NAVIGATION / AUTH
-  // =========================
-
   const navigate = useNavigate();
-
   const { signIn } = useAuth();
-
-  // =========================
-  // STATES
-  // =========================
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
-
-  // =========================
-  // SCHEMAS
-  // =========================
-
-  const loginSchema = z.object({
-    email: z.string().email("Email inválido"),
-
-    password: z
-      .string()
-      .min(8, "A senha deve ter no mínimo 8 caracteres"),
-  });
-
-  const registerSchema = z
-    .object({
-      name: z
-        .string()
-        .min(3, "O nome deve ter no mínimo 3 caracteres"),
-
-      email: z.string().email("Email inválido"),
-
-      password: z
-        .string()
-        .min(8, "A senha deve ter no mínimo 8 caracteres"),
-
-      confirmPassword: z.string().min(8),
-    })
-
-    .refine((data) => data.password === data.confirmPassword, {
-      message: "As senhas não coincidem",
-      path: ["confirmPassword"],
-    });
-
-  // =========================
-  // LOGIN
-  // =========================
+  const [fieldError, setFieldError] = useState<string | null>(null);
 
   async function handleLogin(e: React.FormEvent) {
-
     e.preventDefault();
+    setFieldError(null);
+
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      setFieldError(result.error.issues[0].message);
+      return;
+    }
 
     try {
-
       setLoading(true);
-
-      const result = loginSchema.safeParse({
-        email,
-        password,
-      });
-
-      if (!result.success) {
-
-        alert(result.error.issues[0].message);
-
-        return;
-      }
-
-      const response = await loginService({
-        email,
-        password,
-      });
-
-      if (!response?.token) {
-        throw new Error("Token não encontrado");
-      }
-
+      const response = await loginService({ email, password });
+      if (!response?.token) throw new Error("Token não encontrado");
       signIn(response.token, response.user);
-
-      navigate({
-        to: "/",
-      });
-
-    } catch (error) {
-
-      console.error(error);
-
-      alert("Erro ao realizar login");
-
+      navigate({ to: "/" });
+    } catch {
+      toast.error("Erro ao realizar login");
     } finally {
-
       setLoading(false);
-
     }
   }
 
-  // =========================
-  // REGISTER
-  // =========================
-
   async function handleRegister(e: React.FormEvent) {
-
     e.preventDefault();
+    setFieldError(null);
+
+    const result = registerSchema.safeParse({
+      name,
+      email,
+      password,
+      confirmPassword,
+    });
+    if (!result.success) {
+      setFieldError(result.error.issues[0].message);
+      return;
+    }
 
     try {
-
       setLoading(true);
-
-      const result = registerSchema.safeParse({
-        name,
-        email,
-        password,
-        confirmPassword,
-      });
-
-      if (!result.success) {
-
-        alert(result.error.issues[0].message);
-
-        return;
-      }
-
-      const response = await registerService({
-        name,
-        email,
-        password,
-      });
-
-      if (!response) {
-        throw new Error("Erro ao realizar cadastro");
-      }
-
-      alert("Cadastro realizado com sucesso");
-
+      await registerService({ name, email, password });
+      toast.success("Cadastro realizado com sucesso");
       setCreateAccount(false);
-
       setName("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-
-    } catch (error) {
-
-      console.error(error);
-
-      alert("Erro ao realizar cadastro");
-
+    } catch {
+      toast.error("Erro ao realizar cadastro");
     } finally {
-
       setLoading(false);
-
     }
   }
 
   return (
-
-    <div className="flex min-h-screen w-full items-center justify-center bg-zinc-100 p-4">
-
-      <Card className="w-full max-w-sm rounded-2xl border-zinc-200 shadow-lg">
-
-        <CardContent className="flex flex-col justify-center gap-6 p-6">
-
-          {/* HEADER */}
-          <div className="flex flex-col items-center justify-center gap-1 text-center">
-
-            <div className="flex items-center justify-center gap-2">
-
-              <div className="w-6">
-                <img src={icon} alt="logo" />
-              </div>
-
-              <h1 className="text-2xl font-bold text-zinc-900">
-                Bem-vindo
-              </h1>
-
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm rounded-lg shadow-sm">
+        <CardContent className="flex flex-col gap-5 p-6">
+          <div className="flex flex-col items-center gap-1 text-center">
+            <div className="flex items-center gap-2">
+              <img src={icon} alt="" className="size-6" />
+              <h1 className="text-lg font-bold">Bem-vindo</h1>
             </div>
-
-            <p className="text-sm text-zinc-500">
-
+            <p className="text-xs text-muted-foreground">
               {createAccount
                 ? "Crie sua conta para continuar"
                 : "Entre com sua conta para continuar"}
-
             </p>
-
           </div>
 
-          {/* FORM */}
           <form
-            onSubmit={
-              createAccount
-                ? handleRegister
-                : handleLogin
-            }
-            className="flex flex-col gap-4"
+            onSubmit={createAccount ? handleRegister : handleLogin}
+            className="flex flex-col gap-3"
           >
-
-            {/* EMAIL */}
-            <div className="flex flex-col gap-2">
-
-              <label className="text-sm font-medium text-zinc-700">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs">
                 Email
-              </label>
-
+              </Label>
               <Input
+                id="email"
                 type="email"
                 placeholder="Digite seu email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-9 text-sm"
+                autoFocus
               />
-
             </div>
 
-            {/* NAME */}
             {createAccount && (
-
-              <div className="flex flex-col gap-2">
-
-                <label className="text-sm font-medium text-zinc-700">
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="text-xs">
                   Nome
-                </label>
-
+                </Label>
                 <Input
-                  type="text"
-                  placeholder="Digite seu nome"
+                  id="name"
                   value={name}
-                  onChange={(e) =>
-                    setName(e.target.value)
-                  }
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-9 text-sm"
                 />
-
               </div>
-
             )}
 
-            {/* PASSWORD */}
-            <div className="flex flex-col gap-2">
-
-              <label className="text-sm font-medium text-zinc-700">
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs">
                 Senha
-              </label>
-
+              </Label>
               <Input
+                id="password"
                 type="password"
-                placeholder="Digite sua senha"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-9 text-sm"
               />
-
             </div>
 
-            {/* CONFIRM PASSWORD */}
             {createAccount && (
-
-              <div className="flex flex-col gap-2">
-
-                <label className="text-sm font-medium text-zinc-700">
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-xs">
                   Confirmar senha
-                </label>
-
+                </Label>
                 <Input
+                  id="confirmPassword"
                   type="password"
-                  placeholder="Digite novamente sua senha"
                   value={confirmPassword}
-                  onChange={(e) =>
-                    setConfirmPassword(e.target.value)
-                  }
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="h-9 text-sm"
                 />
-
               </div>
-
             )}
 
-            {/* BUTTONS */}
-            <div className="flex flex-col gap-2">
+            <FieldError message={fieldError ?? undefined} />
 
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700"
-              >
+            <Button type="submit" disabled={loading} className="h-9 w-full text-sm">
+              {loading
+                ? createAccount
+                  ? "Cadastrando..."
+                  : "Entrando..."
+                : createAccount
+                  ? "Criar conta"
+                  : "Entrar"}
+            </Button>
 
-                {loading
-                  ? createAccount
-                    ? "Cadastrando..."
-                    : "Entrando..."
-                  : createAccount
-                    ? "Criar conta"
-                    : "Entrar"}
-
-              </Button>
-
-              <span
-                className="mt-2 flex cursor-pointer items-center justify-center text-sm text-zinc-600 hover:text-zinc-900"
-                onClick={() =>
-                  setCreateAccount(!createAccount)
-                }
-              >
-
-                {createAccount
-                  ? "Já tenho uma conta"
-                  : "Criar conta"}
-
-              </span>
-
-            </div>
-
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setCreateAccount(!createAccount);
+                setFieldError(null);
+              }}
+            >
+              {createAccount ? "Já tenho uma conta" : "Criar conta"}
+            </button>
           </form>
 
-          {/* FOOTER */}
-          <p className="text-center text-xs text-zinc-400">
-            Chat2Order • Plataforma segura
+          <p className="text-center text-[10px] text-muted-foreground">
+            Chat2Order · Plataforma operacional
           </p>
-
         </CardContent>
-
       </Card>
-
     </div>
   );
 }

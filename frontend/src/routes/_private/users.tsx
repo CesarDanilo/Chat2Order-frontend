@@ -1,15 +1,13 @@
-// ===============================
-// USERS PAGE
-// ===============================
-
-import { Header } from "@/components/Header";
-
 import { createFileRoute } from "@tanstack/react-router";
-
+import { useEffect, useState } from "react";
+import { CirclePlus, Search, ShieldCheck, User } from "lucide-react";
+import { Topbar } from "@/components/layout/Topbar";
+import { DrawerUsers } from "@/components/DrawerUsers";
 import { Button } from "@/components/ui/button";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -18,26 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import { Badge } from "@/components/ui/badge";
-
-import { Input } from "@/components/ui/input";
-
-import { CirclePlus, Search, ShieldCheck, User } from "lucide-react";
-
-import { DrawerUsers } from "@/components/DrawerUsers";
-
-import { useEffect, useState } from "react";
-
 import { UserService } from "@/services/user-services";
+import { toast } from "sonner";
 
 interface IUser {
   id: string;
-
   name: string;
-
   email: string;
-
   admin: boolean;
 }
 
@@ -47,52 +32,37 @@ export const Route = createFileRoute("/_private/users")({
 
 function UsersPage() {
   const [users, setUsers] = useState<IUser[]>([]);
-
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-
   const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
-
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   async function getAllUsers() {
     try {
+      setLoading(true);
       const userService = new UserService();
-
       const response = await userService.read();
-
-      setUsers(
-        response.map((user) => ({
-          ...user,
-          admin: user.admin ?? false,
-        }))
-      );
-    } catch (error: any) {
-      console.log(error);
+      setUsers(response.map((user) => ({ ...user, admin: user.admin ?? false })));
+    } catch {
+      toast.error("Erro ao carregar usuários.");
+    } finally {
+      setLoading(false);
     }
-  }
-
-  function handleCreateUser() {
-    setDrawerMode("create");
-
-    setSelectedUserId(null);
-
-    setOpen(true);
-  }
-
-  function handleEditUser(userId: string) {
-    setDrawerMode("edit");
-
-    setSelectedUserId(userId);
-
-    setOpen(true);
   }
 
   useEffect(() => {
     getAllUsers();
   }, []);
 
+  const filtered = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase()),
+  );
+
   return (
-    <div className="flex flex-col items-center bg-zinc-50 h-screen">
+    <div className="flex min-h-full flex-col">
       <DrawerUsers
         open={open}
         onOpenChange={setOpen}
@@ -101,135 +71,119 @@ function UsersPage() {
         userId={selectedUserId}
       />
 
-      <Header
+      <Topbar
         title="Usuários"
         subtitle="Gerencie quem tem acesso à plataforma"
+        actions={
+          <Button
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            onClick={() => {
+              setDrawerMode("create");
+              setSelectedUserId(null);
+              setOpen(true);
+            }}
+          >
+            <CirclePlus className="size-3.5" />
+            Novo usuário
+          </Button>
+        }
       />
 
-      <main className="w-10/12 space-y-4 px-4 py-8 md:px-6 lg:px-8">
-        {/* ACTIONS */}
-        <section className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative w-full md:max-w-xs">
-            <Search
-              size={14}
-              className="
-                absolute
-                left-3
-                top-1/2
-                -translate-y-1/2
-                text-zinc-400
-              "
-            />
+      <div className="mx-auto w-full max-w-4xl flex-1 p-4 md:p-6">
+        <div className="relative mb-4 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar usuário..."
+            className="h-8 pl-8 text-xs"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-            <Input placeholder="Buscar usuário..." className="pl-9" />
-          </div>
-
-          <Button className="gap-2 rounded-xl" onClick={handleCreateUser}>
-            <CirclePlus size={14} />
-
-            <span className="text-xs">Novo usuário</span>
-          </Button>
-        </section>
-
-        {/* TABLE */}
-        <Card className="rounded-2xl border-zinc-200 shadow-none">
+        <Card className="rounded-lg shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Usuários cadastrados
-            </CardTitle>
+            <CardTitle className="text-xs font-medium">Usuários cadastrados</CardTitle>
           </CardHeader>
-
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Usuário</TableHead>
-
-                  <TableHead className="text-xs">Cargo</TableHead>
-
-                  <TableHead className="text-right text-xs">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="
-                            flex
-                            h-9
-                            w-9
-                            items-center
-                            justify-center
-                            rounded-xl
-                            border
-                            border-zinc-200
-                            bg-zinc-50
-                          "
-                        >
-                          <User size={14} className="text-zinc-700" />
-                        </div>
-
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">
-                            {user.name}
-                          </span>
-
-                          <span className="text-xs text-zinc-500">
-                            {user.email}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge
-                        className={`
-                          gap-1
-                          border
-                          hover:bg-transparent
-                          ${
-                            user.admin
-                              ? `
-                                border-blue-200
-                                bg-blue-50
-                                text-blue-700
-                              `
-                              : `
-                                border-zinc-200
-                                bg-zinc-100
-                                text-zinc-700
-                              `
-                          }
-                        `}
-                      >
-                        {user.admin && <ShieldCheck size={10} />}
-
-                        <span className="text-xs">
-                          {user.admin ? "Administrador" : "Funcionário"}
-                        </span>
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs"
-                        onClick={() => handleEditUser(user.id)}
-                      >
-                        Editar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+            {loading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-8 text-[10px] uppercase text-muted-foreground">
+                      Usuário
+                    </TableHead>
+                    <TableHead className="h-8 text-[10px] uppercase text-muted-foreground">
+                      Cargo
+                    </TableHead>
+                    <TableHead className="h-8 text-right text-[10px] uppercase text-muted-foreground">
+                      Ações
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="py-8 text-center text-xs text-muted-foreground">
+                        Nenhum usuário encontrado.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filtered.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="flex size-7 items-center justify-center rounded-md border bg-muted">
+                              <User className="size-3.5" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium">{user.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{user.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`gap-1 rounded px-1.5 py-0 text-[10px] ${
+                              user.admin
+                                ? "border-border bg-muted"
+                                : "border-border bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {user.admin && <ShieldCheck className="size-3" />}
+                            {user.admin ? "Administrador" : "Funcionário"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => {
+                              setDrawerMode("edit");
+                              setSelectedUserId(user.id);
+                              setOpen(true);
+                            }}
+                          >
+                            Editar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   );
 }

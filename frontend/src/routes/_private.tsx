@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
-import { AppSideBar } from "@/components/Sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export const Route = createFileRoute("/_private")({
@@ -14,21 +15,18 @@ function PrivateLayout() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        <AppSideBar />
-
+        <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-14 items-center border-b bg-white px-4 md:hidden">
-            <SidebarTrigger className="text-zinc-600" />
-            <span className="ml-3 text-sm font-semibold text-zinc-900">
-              Chat2Order
-            </span>
+          <header className="flex h-12 items-center border-b bg-background px-4 md:hidden">
+            <SidebarTrigger className="text-muted-foreground" />
+            <span className="ml-3 text-sm font-semibold">Chat2Order</span>
           </header>
-
           <main className="min-w-0 flex-1">
             <Outlet />
           </main>
         </div>
       </div>
+      <CommandPalette />
     </SidebarProvider>
   );
 }
