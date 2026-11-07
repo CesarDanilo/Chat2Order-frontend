@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { z } from "zod";
 import type { Product } from "@/services/products-services";
 import type { Order } from "@/services/orders-services";
@@ -44,59 +44,65 @@ interface UseOrderFormOptions {
   initialOrder?: Order | null;
 }
 
+// Valores iniciais do formulário. Pedido existente: telefone formatado para edição
+// (o marcador de "não informado" fica como está, pois é válido).
+function initialValues(order?: Order | null) {
+  if (!order) {
+    return {
+      customerName: "",
+      customerPhone: "",
+      address: "",
+      rawMessage: "",
+      status: "PENDENTE" as const,
+      paymentMethod: "PIX" as const,
+      source: "WHATSAPP" as const,
+      items: [{ ...EMPTY_ITEM }],
+    };
+  }
+  return {
+    customerName: order.customerName,
+    customerPhone:
+      order.customerPhone === UNKNOWN_PHONE ? UNKNOWN_PHONE : formatPhone(order.customerPhone),
+    address: order.address,
+    rawMessage: order.rawMessage || "",
+    status: order.status,
+    paymentMethod: order.paymentMethod,
+    source: order.source,
+    items: order.items.map((item) => ({
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    })),
+  };
+}
+
+// O estado nasce do pedido recebido. Para carregar outro pedido, remonte o componente (key).
 export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [rawMessage, setRawMessage] = useState("");
-  const [status, setStatus] = useState<"PENDENTE" | "CONCLUIDO" | "CANCELADO">(
-    "PENDENTE",
-  );
+  const [initial] = useState(() => initialValues(initialOrder));
+  const [customerName, setCustomerName] = useState(initial.customerName);
+  const [customerPhone, setCustomerPhone] = useState(initial.customerPhone);
+  const [address, setAddress] = useState(initial.address);
+  const [rawMessage, setRawMessage] = useState(initial.rawMessage);
+  const [status, setStatus] = useState<"PENDENTE" | "CONCLUIDO" | "CANCELADO">(initial.status);
   const [paymentMethod, setPaymentMethod] = useState<
     "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | "CASH"
-  >("PIX");
-  const [source, setSource] = useState<"WHATSAPP" | "SITE">("WHATSAPP");
-  const [items, setItems] = useState<OrderItem[]>([{ ...EMPTY_ITEM }]);
+  >(initial.paymentMethod);
+  const [source, setSource] = useState<"WHATSAPP" | "SITE">(initial.source);
+  const [items, setItems] = useState<OrderItem[]>(initial.items);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const clearForm = useCallback(() => {
-    setCustomerName("");
-    setCustomerPhone("");
-    setAddress("");
-    setRawMessage("");
-    setPaymentMethod("PIX");
-    setStatus("PENDENTE");
-    setSource("WHATSAPP");
-    setItems([{ ...EMPTY_ITEM }]);
+    const empty = initialValues(null);
+    setCustomerName(empty.customerName);
+    setCustomerPhone(empty.customerPhone);
+    setAddress(empty.address);
+    setRawMessage(empty.rawMessage);
+    setPaymentMethod(empty.paymentMethod);
+    setStatus(empty.status);
+    setSource(empty.source);
+    setItems(empty.items);
     setFieldErrors({});
   }, []);
-
-  const loadOrder = useCallback((order: Order) => {
-    setCustomerName(order.customerName);
-    // Telefone formatado para edição. O marcador de "não informado" fica como está, pois é válido.
-    setCustomerPhone(
-      order.customerPhone === UNKNOWN_PHONE
-        ? UNKNOWN_PHONE
-        : formatPhone(order.customerPhone),
-    );
-    setAddress(order.address);
-    setRawMessage(order.rawMessage || "");
-    setStatus(order.status);
-    setPaymentMethod(order.paymentMethod);
-    setSource(order.source);
-    setItems(
-      order.items.map((item) => ({
-        productName: item.productName,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
-    );
-    setFieldErrors({});
-  }, []);
-
-  useEffect(() => {
-    if (initialOrder) loadOrder(initialOrder);
-  }, [initialOrder, loadOrder]);
 
   const total = useMemo(
     () =>
@@ -232,7 +238,6 @@ export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
     buildPayload,
     validate,
     clearForm,
-    loadOrder,
     clearFieldError,
     applyApiFieldErrors,
   };

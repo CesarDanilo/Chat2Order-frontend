@@ -54,29 +54,24 @@ export function ProductCombobox({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={disabled}
-          className="h-7 gap-1.5 px-2 text-xs"
-        >
-          <Search className="size-3.5" />
+        <Button type="button" size="sm" variant="outline" disabled={disabled}>
+          <Search className="size-4" aria-hidden="true" />
           Buscar produto
-          <kbd className="ml-1 hidden rounded border bg-muted px-1 text-[10px] sm:inline">
+          <kbd className="ml-0.5 hidden rounded border bg-muted px-1 font-sans text-xs text-muted-foreground sm:inline">
             /
           </kbd>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
+      <PopoverContent className="w-[min(20rem,calc(100vw-2rem))] p-0" align="end">
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Pesquisar produto..."
+            aria-label="Pesquisar produto do catálogo"
             value={query}
             onValueChange={setQuery}
           />
           <CommandList>
-            <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+            <CommandEmpty>Nenhum produto disponível encontrado.</CommandEmpty>
             <CommandGroup>
               {filtered.map((product) => (
                 <CommandItem
@@ -87,9 +82,16 @@ export function ProductCombobox({
                     onOpenChange(false);
                     setQuery("");
                   }}
-                  className="flex justify-between gap-2 text-xs"
+                  className="flex justify-between gap-3"
                 >
-                  <span className="truncate">{product.name}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate">{product.name}</span>
+                    {product.category ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {product.category}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">
                     {formatCurrency(product.price)}
                   </span>

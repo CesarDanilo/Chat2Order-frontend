@@ -1,87 +1,132 @@
-import {
-  LayoutDashboard,
-  Package,
-  PackageSearch,
-  User,
-  Users,
-} from "lucide-react";
+import { LayoutDashboard, Package, PackageSearch, User, Users } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
-import { cn } from "@/lib/utils";
 import logo from "../../public/icon.png";
 
-const baseItems = [
+const operationItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
   { title: "Pedidos", icon: PackageSearch, url: "/orders" },
   { title: "Produtos", icon: Package, url: "/products" },
-  { title: "Perfil", icon: User, url: "/profile" },
-];
+] as const;
 
-const adminItems = [{ title: "Usuários", icon: Users, url: "/users" }];
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0]?.slice(0, 2);
+  return (letters ?? "?").toUpperCase();
+}
 
 export function AppSidebar() {
   const { user } = useAuth();
+  const { setOpenMobile } = useSidebar();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const menuItems =
-    user?.admin === true
-      ? [...baseItems.slice(0, 3), ...adminItems, baseItems[3]]
-      : baseItems;
+  const accountItems = [
+    ...(user?.admin === true ? [{ title: "Usuários", icon: Users, url: "/users" }] : []),
+    { title: "Perfil", icon: User, url: "/profile" },
+  ];
+
+  const isActive = (url: string) => pathname === url || pathname.startsWith(`${url}/`);
+  // No celular o menu é um painel: fecha ao navegar.
+  const closeMobile = () => setOpenMobile(false);
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="flex h-12 flex-row items-center gap-2 border-b px-4">
-        <img className="size-6 shrink-0" src={logo} alt="" />
-        <div className="min-w-0">
-          <span className="block truncate text-sm font-semibold">Chat2Order</span>
-          <span className="block text-[10px] text-muted-foreground">Operacional</span>
+      <SidebarHeader className="h-16 flex-row items-center gap-2.5 border-b px-4">
+        <img className="size-7 shrink-0" src={logo} alt="" width={28} height={28} />
+        <div className="min-w-0 leading-tight">
+          <span className="block truncate text-sm font-semibold text-foreground">Chat2Order</span>
+          <span className="block text-xs text-muted-foreground">Pedidos pelo WhatsApp</span>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-2">
+      <SidebarContent className="gap-0 py-2">
         <SidebarGroup>
+          <SidebarGroupLabel className="text-xs text-muted-foreground">Operação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => {
-                const active =
-                  pathname === item.url ||
-                  (item.url !== "/dashboard" && pathname.startsWith(item.url));
+              {operationItems.map((item) => (
+                <NavItem key={item.url} {...item} active={isActive(item.url)} onNavigate={closeMobile} />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      className={cn(
-                        "h-8 rounded-md px-3 text-xs",
-                        active &&
-                          "bg-primary/10 font-medium text-primary hover:bg-primary/10",
-                      )}
-                    >
-                      <Link to={item.url}>
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs text-muted-foreground">Conta</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {accountItems.map((item) => (
+                <NavItem key={item.url} {...item} active={isActive(item.url)} onNavigate={closeMobile} />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {user ? (
+        <SidebarFooter className="border-t p-3">
+          <Link
+            to="/profile"
+            onClick={closeMobile}
+            className="flex items-center gap-3 rounded-md p-2 hover:bg-sidebar-accent"
+          >
+            <span
+              aria-hidden="true"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
+            >
+              {initials(user.name)}
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-sm font-medium text-foreground">{user.name}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {user.admin ? "Administrador" : "Funcionário"}
+              </span>
+            </span>
+          </Link>
+        </SidebarFooter>
+      ) : null}
     </Sidebar>
   );
 }
 
-/** @deprecated Use AppSidebar */
-export const AppSideBar = AppSidebar;
+function NavItem({
+  title,
+  icon: Icon,
+  url,
+  active,
+  onNavigate,
+}: {
+  title: string;
+  icon: typeof User;
+  url: string;
+  active: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={active}
+        className="h-9 gap-3 px-3 data-active:font-medium data-active:text-sidebar-accent-foreground"
+      >
+        <Link to={url} onClick={onNavigate} aria-current={active ? "page" : undefined}>
+          <Icon aria-hidden="true" />
+          <span>{title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}

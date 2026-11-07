@@ -9,42 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PrivateRouteImport } from './routes/_private'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PublicAuthRouteImport } from './routes/_public/auth'
-import { Route as PrivateUsersRouteImport } from './routes/_private/users'
-import { Route as PrivateProfileRouteImport } from './routes/_private/profile'
-import { Route as PrivateProductsRouteImport } from './routes/_private/products'
-import { Route as PrivateOrdersRouteImport } from './routes/_private/orders'
+import { Route as PrivateRouteImport } from './routes/_private'
 import { Route as PrivateDashboardRouteImport } from './routes/_private/dashboard'
+import { Route as PrivateOrdersRouteImport } from './routes/_private/orders'
+import { Route as PrivateProductsRouteImport } from './routes/_private/products'
+import { Route as PrivateProfileRouteImport } from './routes/_private/profile'
+import { Route as PrivateUsersRouteImport } from './routes/_private/users'
+import { Route as PublicAuthRouteImport } from './routes/_public/auth'
 
-const PrivateRoute = PrivateRouteImport.update({
-  id: '/_private',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PublicAuthRoute = PublicAuthRouteImport.update({
-  id: '/_public/auth',
-  path: '/auth',
+const PrivateRoute = PrivateRouteImport.update({
+  id: '/_private',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PrivateUsersRoute = PrivateUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => PrivateRoute,
-} as any)
-const PrivateProfileRoute = PrivateProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => PrivateRoute,
-} as any)
-const PrivateProductsRoute = PrivateProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
+const PrivateDashboardRoute = PrivateDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => PrivateRoute,
 } as any)
 const PrivateOrdersRoute = PrivateOrdersRouteImport.update({
@@ -52,10 +37,25 @@ const PrivateOrdersRoute = PrivateOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => PrivateRoute,
 } as any)
-const PrivateDashboardRoute = PrivateDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const PrivateProductsRoute = PrivateProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => PrivateRoute,
+} as any)
+const PrivateProfileRoute = PrivateProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => PrivateRoute,
+} as any)
+const PrivateUsersRoute = PrivateUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => PrivateRoute,
+} as any)
+const PublicAuthRoute = PublicAuthRouteImport.update({
+  id: '/_public/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -126,13 +126,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_private': {
-      id: '/_private'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PrivateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -140,32 +133,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_public/auth': {
-      id: '/_public/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof PublicAuthRouteImport
+    '/_private': {
+      id: '/_private'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PrivateRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_private/users': {
-      id: '/_private/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof PrivateUsersRouteImport
-      parentRoute: typeof PrivateRoute
-    }
-    '/_private/profile': {
-      id: '/_private/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof PrivateProfileRouteImport
-      parentRoute: typeof PrivateRoute
-    }
-    '/_private/products': {
-      id: '/_private/products'
-      path: '/products'
-      fullPath: '/products'
-      preLoaderRoute: typeof PrivateProductsRouteImport
+    '/_private/dashboard': {
+      id: '/_private/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof PrivateDashboardRouteImport
       parentRoute: typeof PrivateRoute
     }
     '/_private/orders': {
@@ -175,12 +154,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateOrdersRouteImport
       parentRoute: typeof PrivateRoute
     }
-    '/_private/dashboard': {
-      id: '/_private/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof PrivateDashboardRouteImport
+    '/_private/products': {
+      id: '/_private/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof PrivateProductsRouteImport
       parentRoute: typeof PrivateRoute
+    }
+    '/_private/profile': {
+      id: '/_private/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof PrivateProfileRouteImport
+      parentRoute: typeof PrivateRoute
+    }
+    '/_private/users': {
+      id: '/_private/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof PrivateUsersRouteImport
+      parentRoute: typeof PrivateRoute
+    }
+    '/_public/auth': {
+      id: '/_public/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof PublicAuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }

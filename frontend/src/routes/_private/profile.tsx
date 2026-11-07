@@ -1,71 +1,94 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  BadgeCheck,
-  LogOut,
-  Mail,
-  MapPin,
-  Phone,
-  Shield,
-  Loader2,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Topbar } from "@/components/layout/Topbar";
+import { ErrorState } from "@/components/feedback/states";
+import { ToneBadge } from "@/components/feedback/tone-badge";
+import { FieldError, FieldHint } from "@/components/form/field-error";
+import { PasswordInput } from "@/components/form/password-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/auth-context";
-import { useEffect, useState } from "react";
-import { UserService, type User, type UserUpdate } from "@/services/user-services";
-import { LIMITS, profileSchema, zodFieldErrors } from "@/lib/validation";
+import { useUpdateUser, useUser } from "@/hooks/queries/use-users";
+import { isUnauthorizedError } from "@/lib/api";
 import { getApiFieldErrors, getGenericErrorMessage } from "@/lib/api-error";
+import { LIMITS, profileSchema, zodFieldErrors } from "@/lib/validation";
+import type { User, UserUpdate } from "@/services/user-services";
 
 export const Route = createFileRoute("/_private/profile")({
   component: ProfilePage,
 });
 
-const userService = new UserService();
-
 // Campos mostrados junto ao input. Erros de outros campos vão para o toast.
 const PROFILE_FIELDS = ["name", "email", "password", "confirmPassword"];
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0]?.slice(0, 2);
+  return (letters ?? "?").toUpperCase();
+}
 
 function ProfilePage() {
   const navigate = useNavigate();
   const { user: authUser, signOut } = useAuth();
+  const { data: user, isLoading, isError, isFetching, refetch } = useUser(authUser?.id);
 
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  function handleLogout() {
+    signOut();
+    navigate({ to: "/auth" });
+  }
+
+  return (
+    <>
+      <Topbar
+        title="Meu perfil"
+        subtitle="Seus dados de acesso"
+        actions={
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="size-4" aria-hidden="true" />
+            Sair
+          </Button>
+        }
+      />
+
+      <div className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-5 md:px-6 md:py-6 *:max-w-3xl">
+        {isLoading ? (
+          <div className="space-y-6" aria-busy="true" aria-label="Carregando perfil">
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-80 rounded-xl" />
+          </div>
+        ) : isError || !user ? (
+          <Card className="py-0">
+            <ErrorState
+              title="Não foi possível carregar o perfil"
+              onRetry={() => refetch()}
+              retrying={isFetching}
+            />
+          </Card>
+        ) : (
+          <ProfileContent key={user.id} user={user} />
+        )}
+      </div>
+    </>
+  );
+}
+
+function ProfileContent({ user }: { user: User }) {
+  const navigate = useNavigate();
+  const { user: authUser, signOut, updateUser } = useAuth();
+  const update = useUpdateUser();
+
   const [form, setForm] = useState({
-    name: "",
-    email: "",
+    name: user.name,
+    email: user.email,
     password: "",
     confirmPassword: "",
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (!authUser?.id) return;
-
-    let cancelled = false;
-
-    userService
-      .readById(authUser.id)
-      .then((data) => {
-        if (cancelled) return;
-        setUser(data);
-        setForm((prev) => ({ ...prev, name: data.name, email: data.email }));
-      })
-      .catch(() => toast.error("Erro ao carregar perfil."))
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authUser?.id]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -78,8 +101,8 @@ function ProfilePage() {
     });
   }
 
-  async function handleSave() {
-    if (!authUser?.id) return;
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
 
     const result = profileSchema.safeParse(form);
     if (!result.success) {
@@ -89,17 +112,11 @@ function ProfilePage() {
     setFieldErrors({});
 
     // Sem admin e sem confirmPassword. Senha vazia não é enviada.
-    const payload: UserUpdate = {
-      name: result.data.name,
-      email: result.data.email,
-    };
-    if (result.data.password !== "") {
-      payload.password = result.data.password;
-    }
+    const payload: UserUpdate = { name: result.data.name, email: result.data.email };
+    if (result.data.password !== "") payload.password = result.data.password;
 
     try {
-      setSaving(true);
-      const updated = await userService.update(authUser.id, payload);
+      const updated = await update.mutateAsync({ id: user.id, data: payload });
 
       // Senha nova encerra todas as sessões no servidor, inclusive esta.
       if (payload.password) {
@@ -109,147 +126,132 @@ function ProfilePage() {
         return;
       }
 
-      setUser(updated);
+      if (authUser) updateUser({ ...authUser, name: updated.name, email: updated.email });
       toast.success("Perfil atualizado com sucesso.");
       setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
     } catch (err) {
       setFieldErrors(getApiFieldErrors(err));
       const message = getGenericErrorMessage(err, "Erro ao salvar.", PROFILE_FIELDS);
-      if (message) toast.error(message);
-    } finally {
-      setSaving(false);
+      if (message && !isUnauthorizedError(err)) toast.error(message);
     }
   }
 
-  function handleLogout() {
-    signOut();
-    navigate({ to: "/auth" });
-  }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-full flex-col">
-        <Topbar title="Meu perfil" subtitle="Carregando..." />
-        <div className="mx-auto w-full max-w-3xl space-y-3 p-4">
-          <Skeleton className="h-32 rounded-lg" />
-          <Skeleton className="h-48 rounded-lg" />
-        </div>
-      </div>
-    );
-  }
+  const describe = (field: string, hintId?: string) => {
+    if (fieldErrors[field]) return { "aria-invalid": true, "aria-describedby": `${field}-error` };
+    return hintId ? { "aria-describedby": hintId } : {};
+  };
 
   return (
-    <div className="flex min-h-full flex-col">
-      <Topbar
-        title="Meu perfil"
-        subtitle="Gerencie suas informações pessoais"
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
-            onClick={handleLogout}
+    <>
+      <Card className="py-0">
+        <CardContent className="flex items-center gap-4 p-5">
+          <span
+            aria-hidden="true"
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary"
           >
-            <LogOut className="size-3.5" />
-            Sair
-          </Button>
-        }
-      />
+            {initials(user.name)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-base font-semibold">{user.name}</h2>
+            <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+          </div>
+          <ToneBadge tone={user.admin ? "success" : "neutral"} className="hidden sm:inline-flex">
+            {user.admin ? "Administrador" : "Funcionário"}
+          </ToneBadge>
+        </CardContent>
+      </Card>
 
-      <div className="mx-auto w-full max-w-3xl space-y-4 p-4 md:p-6">
-        <Card className="rounded-lg shadow-none">
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="py-0">
+        <form noValidate onSubmit={handleSave}>
+          <CardContent className="space-y-6 p-5">
+            <section aria-labelledby="profile-account" className="space-y-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold">{user?.name ?? "—"}</h2>
-                  <span className="inline-flex items-center gap-1 rounded border border-[var(--status-success-border)] bg-[var(--status-success-bg)] px-1.5 py-0.5 text-[10px] text-[var(--status-success-fg)]">
-                    <BadgeCheck className="size-3" />
-                    Verificado
-                  </span>
+                <h3 id="profile-account" className="text-sm font-semibold">
+                  Informações da conta
+                </h3>
+                <p className="text-sm text-muted-foreground">Nome e e-mail usados para entrar.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">Nome completo</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    autoComplete="name"
+                    maxLength={LIMITS.name.max}
+                    value={form.name}
+                    onChange={handleChange}
+                    {...describe("name")}
+                  />
+                  <FieldError id="name-error" message={fieldErrors.name} />
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <InfoBadge icon={<Mail className="size-3" />} label={user?.email ?? "—"} />
-                  <InfoBadge icon={<Phone className="size-3" />} label="(67) 99999-9999" />
-                  <InfoBadge icon={<MapPin className="size-3" />} label="Dourados, MS" />
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    maxLength={LIMITS.email.max}
+                    value={form.email}
+                    onChange={handleChange}
+                    {...describe("email")}
+                  />
+                  <FieldError id="email-error" message={fieldErrors.email} />
                 </div>
               </div>
-              <div className="rounded-md border bg-muted/40 p-4">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Shield className="size-3.5" />
-                  Plano atual
-                </div>
-                <p className="mt-1 text-sm font-semibold">
-                  {user?.admin ? "Admin" : "Gratuito"}
+            </section>
+
+            <section aria-labelledby="profile-password" className="space-y-4 border-t pt-6">
+              <div>
+                <h3 id="profile-password" className="text-sm font-semibold">
+                  Alterar senha
+                </h3>
+                <p id="profile-password-hint" className="text-sm text-muted-foreground">
+                  Deixe em branco para manter a senha atual. Ao trocar, você entra de novo.
                 </p>
               </div>
-            </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Nova senha</Label>
+                  <PasswordInput
+                    id="password"
+                    name="password"
+                    autoComplete="new-password"
+                    maxLength={LIMITS.password.maxBytes}
+                    value={form.password}
+                    onChange={handleChange}
+                    {...describe("password", "profile-password-hint")}
+                  />
+                  {fieldErrors.password ? (
+                    <FieldError id="password-error" message={fieldErrors.password} />
+                  ) : (
+                    <FieldHint>Mínimo de {LIMITS.password.min} caracteres.</FieldHint>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+                  <PasswordInput
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    maxLength={LIMITS.password.maxBytes}
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    {...describe("confirmPassword")}
+                  />
+                  <FieldError id="confirmPassword-error" message={fieldErrors.confirmPassword} />
+                </div>
+              </div>
+            </section>
           </CardContent>
-        </Card>
-
-        <Card className="rounded-lg shadow-none">
-          <CardContent className="p-4">
-            <h3 className="text-xs font-semibold">Informações da conta</h3>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Field label="Nome completo" name="name" maxLength={LIMITS.name.max} value={form.name} onChange={handleChange} error={fieldErrors.name} />
-              <Field label="E-mail" name="email" type="email" maxLength={LIMITS.email.max} value={form.email} onChange={handleChange} error={fieldErrors.email} />
-              <Field label="Nova senha" name="password" type="password" maxLength={LIMITS.password.maxBytes} value={form.password} onChange={handleChange} error={fieldErrors.password} />
-              <Field label="Confirmar senha" name="confirmPassword" type="password" maxLength={LIMITS.password.maxBytes} value={form.confirmPassword} onChange={handleChange} error={fieldErrors.confirmPassword} />
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button size="sm" className="h-8 text-xs" onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 className="size-3.5 animate-spin" /> : "Salvar alterações"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  name,
-  type = "text",
-  maxLength,
-  value,
-  onChange,
-  error,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  maxLength?: number;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  error?: string;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={name} className="text-xs">
-        {label}
-      </Label>
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        maxLength={maxLength}
-        value={value}
-        onChange={onChange}
-        aria-invalid={!!error}
-        className="h-8 text-xs"
-      />
-      {error && <p className="text-[10px] text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-function InfoBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] text-muted-foreground">
-      {icon}
-      {label}
-    </div>
+          <div className="flex justify-end border-t px-5 py-4">
+            <Button type="submit" className="h-10 w-full sm:w-auto" disabled={update.isPending}>
+              {update.isPending ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </>
   );
 }

@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth-context";
-import { Card, CardContent } from "@/components/ui/card";
+import { FieldError } from "@/components/form/field-error";
+import { PasswordInput } from "@/components/form/password-input";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,11 +21,6 @@ type FieldErrors = Record<string, string>;
 const LOGIN_FIELDS = ["email", "password"];
 const REGISTER_FIELDS = ["name", "email", "password", "confirmPassword"];
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-[10px] text-destructive">{message}</p>;
-}
-
 function withoutKey(errors: FieldErrors, field: string): FieldErrors {
   if (!errors[field]) return errors;
   const next = { ...errors };
@@ -32,6 +31,8 @@ function withoutKey(errors: FieldErrors, field: string): FieldErrors {
 export function Login() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
+  // ?expired=true: chegou aqui porque a API recusou a sessão (401).
+  const { expired } = useSearch({ strict: false }) as { expired?: boolean };
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -44,6 +45,10 @@ export function Login() {
   function clearError(field: string) {
     setFieldErrors((prev) => withoutKey(prev, field));
   }
+
+  // Liga o campo à mensagem de erro (lida pelo leitor de tela junto com o rótulo).
+  const describe = (field: string) =>
+    fieldErrors[field] ? { "aria-invalid": true, "aria-describedby": `${field}-error` } : {};
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -73,12 +78,7 @@ export function Login() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
 
-    const result = registerSchema.safeParse({
-      name,
-      email,
-      password,
-      confirmPassword,
-    });
+    const result = registerSchema.safeParse({ name, email, password, confirmPassword });
     if (!result.success) {
       setFieldErrors(zodFieldErrors(result.error));
       return;
@@ -110,108 +110,116 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm rounded-lg shadow-sm">
-        <CardContent className="flex flex-col gap-5 p-6">
-          <div className="flex flex-col items-center gap-1 text-center">
-            <div className="flex items-center gap-2">
-              <img src={icon} alt="" className="size-6" />
-              <h1 className="text-lg font-bold">Bem-vindo</h1>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {createAccount
-                ? "Crie sua conta para continuar"
-                : "Entre com sua conta para continuar"}
-            </p>
-          </div>
+    <div className="relative flex min-h-svh w-full flex-col items-center justify-center bg-muted/40 px-4 py-10">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
+
+      <main className="w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <img src={icon} alt="" width={40} height={40} className="size-10" />
+          <h1 className="mt-4 text-xl font-semibold tracking-tight">
+            {createAccount ? "Criar sua conta" : "Entrar no Chat2Order"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {createAccount
+              ? "Preencha os dados para começar."
+              : "Monte e acompanhe os pedidos do WhatsApp."}
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          {expired && !createAccount ? (
+            <Alert className="mb-5 border-warning-border bg-warning-bg text-warning-fg" role="status">
+              <Clock aria-hidden="true" />
+              <AlertDescription className="text-warning-fg">
+                Sua sessão expirou. Entre novamente.
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
           <form
             noValidate
             onSubmit={createAccount ? handleRegister : handleLogin}
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-4"
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Digite seu email"
-                maxLength={LIMITS.email.max}
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  clearError("email");
-                }}
-                aria-invalid={!!fieldErrors.email}
-                className="h-9 text-sm"
-                autoFocus
-              />
-              <FieldError message={fieldErrors.email} />
-            </div>
-
             {createAccount && (
               <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-xs">
-                  Nome
-                </Label>
+                <Label htmlFor="name">Nome</Label>
                 <Input
                   id="name"
+                  autoComplete="name"
                   maxLength={LIMITS.name.max}
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
                     clearError("name");
                   }}
-                  aria-invalid={!!fieldErrors.name}
-                  className="h-9 text-sm"
+                  className="h-10"
+                  {...describe("name")}
                 />
-                <FieldError message={fieldErrors.name} />
+                <FieldError id="name-error" message={fieldErrors.name} />
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs">
-                Senha
-              </Label>
+              <Label htmlFor="email">E-mail</Label>
               <Input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="voce@empresa.com"
+                maxLength={LIMITS.email.max}
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearError("email");
+                }}
+                className="h-10"
+                autoFocus
+                {...describe("email")}
+              />
+              <FieldError id="email-error" message={fieldErrors.email} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Senha</Label>
+              <PasswordInput
                 id="password"
-                type="password"
+                autoComplete={createAccount ? "new-password" : "current-password"}
                 maxLength={createAccount ? LIMITS.password.maxBytes : undefined}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   clearError("password");
                 }}
-                aria-invalid={!!fieldErrors.password}
-                className="h-9 text-sm"
+                className="h-10"
+                {...describe("password")}
               />
-              <FieldError message={fieldErrors.password} />
+              <FieldError id="password-error" message={fieldErrors.password} />
             </div>
 
             {createAccount && (
               <div className="space-y-1.5">
-                <Label htmlFor="confirmPassword" className="text-xs">
-                  Confirmar senha
-                </Label>
-                <Input
+                <Label htmlFor="confirmPassword">Confirmar senha</Label>
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
+                  autoComplete="new-password"
                   maxLength={LIMITS.password.maxBytes}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
                     clearError("confirmPassword");
                   }}
-                  aria-invalid={!!fieldErrors.confirmPassword}
-                  className="h-9 text-sm"
+                  className="h-10"
+                  {...describe("confirmPassword")}
                 />
-                <FieldError message={fieldErrors.confirmPassword} />
+                <FieldError id="confirmPassword-error" message={fieldErrors.confirmPassword} />
               </div>
             )}
 
-            <Button type="submit" disabled={loading} className="h-9 w-full text-sm">
+            <Button type="submit" disabled={loading} className="mt-1 h-10 w-full">
               {loading
                 ? createAccount
                   ? "Cadastrando..."
@@ -220,24 +228,23 @@ export function Login() {
                   ? "Criar conta"
                   : "Entrar"}
             </Button>
-
-            <button
-              type="button"
-              className="text-xs text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                setCreateAccount(!createAccount);
-                setFieldErrors({});
-              }}
-            >
-              {createAccount ? "Já tenho uma conta" : "Criar conta"}
-            </button>
           </form>
+        </div>
 
-          <p className="text-center text-[10px] text-muted-foreground">
-            Chat2Order · Plataforma operacional
-          </p>
-        </CardContent>
-      </Card>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          {createAccount ? "Já tem uma conta?" : "Ainda não tem conta?"}{" "}
+          <button
+            type="button"
+            className="rounded-sm font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => {
+              setCreateAccount(!createAccount);
+              setFieldErrors({});
+            }}
+          >
+            {createAccount ? "Fazer login" : "Criar conta"}
+          </button>
+        </p>
+      </main>
     </div>
   );
 }

@@ -1,20 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AlertTriangle, ArrowRight, Clock3, PackageOpen, Plus, ShoppingBag, Wallet, XCircle } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
+import { EmptyState, ErrorState } from "@/components/feedback/states";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import {
-  AlertTriangle,
-  ArrowDown,
-  ArrowUp,
-  Clock3,
-  DollarSign,
-  ShoppingBag,
-} from "lucide-react";
 import { useOrders } from "@/hooks/queries/use-orders";
 import type { Order } from "@/services/orders-services";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, formatPhone, formatRelativeDate } from "@/lib/formatters";
 import { OrderStatusBadge } from "@/features/orders/OrderStatusBadge";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_private/dashboard")({
   component: DashboardPage,
@@ -24,6 +19,7 @@ interface DashboardMetrics {
   ordersToday: number;
   revenueToday: number;
   pendingOrders: number;
+  completedOrders: number;
   cancelledOrders: number;
   totalOrders: number;
   totalRevenue: number;
@@ -48,235 +44,258 @@ function pct(part: number, total: number): number {
 
 function computeMetrics(orders: Order[]): DashboardMetrics {
   const todayOrders = orders.filter((o) => isToday(o.createdAt));
-  const revenueToday = todayOrders.reduce((acc, o) => acc + o.total, 0);
-  const totalRevenue = orders.reduce((acc, o) => acc + o.total, 0);
-  const pendingOrders = orders.filter(
-    (o) => o.status?.toUpperCase() === "PENDENTE",
-  ).length;
-  const cancelledOrders = orders.filter(
-    (o) => o.status?.toUpperCase() === "CANCELADO",
-  ).length;
-  const recentOrders = [...orders]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt ?? 0).getTime() -
-        new Date(a.createdAt ?? 0).getTime(),
-    )
-    .slice(0, 5);
+  const byStatus = (status: string) =>
+    orders.filter((o) => o.status?.toUpperCase() === status).length;
 
   return {
     ordersToday: todayOrders.length,
-    revenueToday,
-    pendingOrders,
-    cancelledOrders,
+    revenueToday: todayOrders.reduce((acc, o) => acc + o.total, 0),
+    pendingOrders: byStatus("PENDENTE"),
+    completedOrders: byStatus("CONCLUIDO"),
+    cancelledOrders: byStatus("CANCELADO"),
     totalOrders: orders.length,
-    totalRevenue,
-    recentOrders,
+    totalRevenue: orders.reduce((acc, o) => acc + o.total, 0),
+    recentOrders: [...orders]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime(),
+      )
+      .slice(0, 5),
   };
 }
 
 function DashboardPage() {
-  const { data: orders = [], isLoading, isError, refetch } = useOrders();
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-full flex-col">
-        <Topbar title="Dashboard" subtitle="Visão geral da operação" />
-        <div className="mx-auto w-full max-w-6xl space-y-3 p-4 md:p-6">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-lg" />
-            ))}
-          </div>
-          <Skeleton className="h-32 rounded-lg" />
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex min-h-full flex-col">
-        <Topbar title="Dashboard" subtitle="Visão geral da operação" />
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6">
-          <p className="text-sm">Erro ao carregar dados</p>
-          <Button size="sm" onClick={() => refetch()}>
-            Tentar novamente
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const metrics = computeMetrics(orders);
+  const { data: orders = [], isLoading, isError, isFetching, refetch } = useOrders();
 
   return (
-    <div className="flex min-h-full flex-col">
-      <Topbar title="Dashboard" subtitle="Visão geral da operação" />
-
-      <div className="mx-auto w-full max-w-6xl space-y-4 p-4 md:p-6">
-        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            title="Receita hoje"
-            value={formatCurrency(metrics.revenueToday)}
-            trend={`${pct(metrics.revenueToday, metrics.totalRevenue)}%`}
-            positive={pct(metrics.revenueToday, metrics.totalRevenue) >= 20}
-            icon={<DollarSign className="size-3.5" />}
-            tone="success"
-          />
-          <MetricCard
-            title="Pedidos hoje"
-            value={metrics.ordersToday}
-            trend={`${pct(metrics.ordersToday, metrics.totalOrders)}%`}
-            positive={pct(metrics.ordersToday, metrics.totalOrders) >= 20}
-            icon={<ShoppingBag className="size-3.5" />}
-            tone="neutral"
-          />
-          <MetricCard
-            title="Pendentes"
-            value={metrics.pendingOrders}
-            trend={`${pct(metrics.pendingOrders, metrics.totalOrders)}%`}
-            positive={pct(metrics.pendingOrders, metrics.totalOrders) < 30}
-            icon={<Clock3 className="size-3.5" />}
-            tone="warning"
-          />
-          <MetricCard
-            title="Cancelamentos"
-            value={metrics.cancelledOrders}
-            trend={`${pct(metrics.cancelledOrders, metrics.totalOrders)}%`}
-            positive={false}
-            icon={<AlertTriangle className="size-3.5" />}
-            tone="error"
-          />
-        </section>
-
-        {(metrics.pendingOrders > 10 || metrics.cancelledOrders > 5) && (
-          <Card className="rounded-lg shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium">
-                Alertas operacionais
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {metrics.pendingOrders > 10 && (
-                <AlertItem
-                  text={`${metrics.pendingOrders} pedidos pendentes aguardando atendimento`}
-                  danger
-                />
-              )}
-              {metrics.cancelledOrders > 5 && (
-                <AlertItem text="Taxa de cancelamento elevada hoje" danger />
-              )}
-            </CardContent>
+    <>
+      <Topbar
+        title="Dashboard"
+        subtitle="Visão geral da operação"
+        actions={
+          <Button asChild>
+            <Link to="/orders" search={{ create: true }}>
+              <Plus className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Novo pedido</span>
+              <span className="sr-only sm:hidden">Novo pedido</span>
+            </Link>
+          </Button>
+        }
+      />
+      <div className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-5 md:px-6 md:py-6">
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : isError ? (
+          <Card className="py-0">
+            <ErrorState
+              title="Não foi possível carregar a visão geral"
+              onRetry={() => refetch()}
+              retrying={isFetching}
+            />
           </Card>
+        ) : (
+          <DashboardContent metrics={computeMetrics(orders)} />
         )}
+      </div>
+    </>
+  );
+}
 
-        <Card className="rounded-lg shadow-none">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium">Operação recente</CardTitle>
-            <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-              <Link to="/orders">Ver todos</Link>
+function DashboardContent({ metrics }: { metrics: DashboardMetrics }) {
+  const alerts = [
+    metrics.pendingOrders > 10 &&
+      `${metrics.pendingOrders} pedidos pendentes aguardando atendimento.`,
+    metrics.cancelledOrders > 5 && "Taxa de cancelamento elevada.",
+  ].filter((alert): alert is string => typeof alert === "string");
+
+  return (
+    <>
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        <MetricCard
+          label="Receita hoje"
+          value={formatCurrency(metrics.revenueToday)}
+          detail={`${pct(metrics.revenueToday, metrics.totalRevenue)}% da receita total`}
+          icon={Wallet}
+        />
+        <MetricCard
+          label="Pedidos hoje"
+          value={metrics.ordersToday}
+          detail={`${metrics.totalOrders} no total`}
+          icon={ShoppingBag}
+        />
+        <MetricCard
+          label="Pendentes"
+          value={metrics.pendingOrders}
+          detail={`${pct(metrics.pendingOrders, metrics.totalOrders)}% dos pedidos`}
+          icon={Clock3}
+        />
+        <MetricCard
+          label="Cancelados"
+          value={metrics.cancelledOrders}
+          detail={`${pct(metrics.cancelledOrders, metrics.totalOrders)}% dos pedidos`}
+          icon={XCircle}
+        />
+      </section>
+
+      {alerts.length > 0 && (
+        <section
+          aria-label="Alertas operacionais"
+          className="space-y-2 rounded-lg border border-warning-border bg-warning-bg p-4 text-warning-fg"
+        >
+          {alerts.map((text) => (
+            <p key={text} className="flex items-center gap-2 text-sm font-medium">
+              <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+              {text}
+            </p>
+          ))}
+        </section>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="gap-0 py-0 lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 border-b px-5 py-4 [.border-b]:pb-4">
+            <CardTitle className="text-sm font-semibold">
+              <h2>Pedidos recentes</h2>
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild className="-mr-2">
+              <Link to="/orders">
+                Ver todos
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-1">
+          <CardContent className="px-0">
             {metrics.recentOrders.length === 0 ? (
-              <div className="py-6 text-center">
-                <p className="text-xs text-muted-foreground">
-                  Nenhum pedido registrado ainda.
-                </p>
-                <Button size="sm" className="mt-3 h-8 text-xs" asChild>
-                  <Link to="/orders" search={{ create: true }}>
-                    Criar pedido
-                  </Link>
-                </Button>
-              </div>
+              <EmptyState
+                icon={PackageOpen}
+                title="Nenhum pedido registrado ainda"
+                description="Os pedidos cadastrados aparecem aqui."
+                action={
+                  <Button asChild>
+                    <Link to="/orders" search={{ create: true }}>
+                      Criar pedido
+                    </Link>
+                  </Button>
+                }
+              />
             ) : (
-              metrics.recentOrders.map((item) => (
-                <div
-                  key={item.id ?? item.customerName}
-                  className="flex items-center justify-between rounded-md border px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium">
-                      {item.customerName}
-                    </p>
-                    <div className="mt-0.5">
-                      <OrderStatusBadge status={item.status} />
+              <ul className="divide-y">
+                {metrics.recentOrders.map((order) => (
+                  <li
+                    key={order.id ?? order.customerName}
+                    className="flex items-center justify-between gap-4 px-5 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{order.customerName}</p>
+                      <p className="truncate text-xs text-muted-foreground tabular-nums">
+                        {formatPhone(order.customerPhone)} · {formatRelativeDate(order.createdAt)}
+                      </p>
                     </div>
-                  </div>
-                  <span className="text-xs font-semibold tabular-nums">
-                    {formatCurrency(item.total)}
-                  </span>
-                </div>
-              ))
+                    <div className="flex shrink-0 items-center gap-3">
+                      <OrderStatusBadge status={order.status} className="hidden sm:inline-flex" />
+                      <span className="w-24 text-right text-sm font-semibold tabular-nums">
+                        {formatCurrency(order.total)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </CardContent>
         </Card>
+
+        <StatusSummary metrics={metrics} />
       </div>
-    </div>
+    </>
   );
 }
 
 function MetricCard({
-  title,
+  label,
   value,
-  trend,
-  positive,
-  icon,
-  tone,
+  detail,
+  icon: Icon,
 }: {
-  title: string;
+  label: string;
   value: string | number;
-  trend: string;
-  positive: boolean;
-  icon: React.ReactNode;
-  tone: "success" | "warning" | "error" | "neutral";
+  detail: string;
+  icon: typeof Wallet;
 }) {
-  const toneClass = {
-    success: "border-[var(--status-success-border)] bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
-    warning: "border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)]",
-    error: "border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-[var(--status-error-fg)]",
-    neutral: "border-border bg-muted text-muted-foreground",
-  }[tone];
-
   return (
-    <Card className="rounded-lg shadow-none">
-      <CardContent className="flex items-center justify-between p-3">
-        <div className="space-y-0.5">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            {title}
-          </p>
-          <p className="text-lg font-semibold tabular-nums">{value}</p>
-          <div
-            className={`flex items-center gap-1 text-[10px] ${
-              positive ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"
-            }`}
-          >
-            {positive ? <ArrowUp className="size-2.5" /> : <ArrowDown className="size-2.5" />}
-            <span>{trend} do total</span>
-          </div>
+    <Card className="gap-0 py-0">
+      <CardContent className="space-y-2 p-4 md:p-5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </div>
-        <div
-          className={`flex size-8 items-center justify-center rounded-md border ${toneClass}`}
-        >
-          {icon}
-        </div>
+        <p className="truncate text-xl font-semibold tracking-tight tabular-nums md:text-2xl">
+          {value}
+        </p>
+        <p className="text-xs text-muted-foreground">{detail}</p>
       </CardContent>
     </Card>
   );
 }
 
-function AlertItem({ text, danger = false }: { text: string; danger?: boolean }) {
+// Distribuição por status: barra com texto e número (a cor nunca é a única pista).
+function StatusSummary({ metrics }: { metrics: DashboardMetrics }) {
+  const rows = [
+    { label: "Pendentes", value: metrics.pendingOrders, bar: "bg-warning-fg" },
+    { label: "Concluídos", value: metrics.completedOrders, bar: "bg-success-fg" },
+    { label: "Cancelados", value: metrics.cancelledOrders, bar: "bg-danger-fg" },
+  ];
+
   return (
-    <div
-      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs ${
-        danger
-          ? "border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-[var(--status-error-fg)]"
-          : "border-border bg-muted text-muted-foreground"
-      }`}
-    >
-      <AlertTriangle className="size-3 shrink-0" />
-      <span>{text}</span>
+    <Card className="gap-0 py-0">
+      <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
+        <CardTitle className="text-sm font-semibold">
+          <h2>Pedidos por status</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 p-5">
+        {rows.map((row) => {
+          const share = pct(row.value, metrics.totalOrders);
+          return (
+            <div key={row.label} className="space-y-1.5">
+              <div className="flex items-baseline justify-between text-sm">
+                <span>{row.label}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  <span className="font-medium text-foreground">{row.value}</span> · {share}%
+                </span>
+              </div>
+              <div
+                className="h-2 overflow-hidden rounded-full bg-muted"
+                role="img"
+                aria-label={`${row.label}: ${row.value} pedidos, ${share}% do total`}
+              >
+                <div className={cn("h-full rounded-full", row.bar)} style={{ width: `${share}%` }} />
+              </div>
+            </div>
+          );
+        })}
+        <p className="border-t pt-4 text-sm text-muted-foreground">
+          Receita total{" "}
+          <span className="float-right font-semibold text-foreground tabular-nums">
+            {formatCurrency(metrics.totalRevenue)}
+          </span>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Carregando visão geral">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[7.25rem] rounded-xl" />
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Skeleton className="h-80 rounded-xl lg:col-span-2" />
+        <Skeleton className="h-80 rounded-xl" />
+      </div>
     </div>
   );
 }
