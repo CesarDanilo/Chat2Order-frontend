@@ -27,3 +27,119 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  # Sobe API, banco e frontend e roda o Playwright contra eles. Sem segredos do repositório:
+  # senhas e JWT_SECRET são gerados a cada execução.
+  e2e:
+    needs: frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: chat2order
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/chat2order
+      PORT: "3001"
+      NODE_ENV: development
+      BRANCH: ${{ github.head_ref || github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: frontend-repo
+
+      - name: Escolher a branch do backend
+        id: backend
+        run: |
+          if git ls-remote --exit-code --heads https://github.com/CesarDanilo/Chat2Order-backend.git "$BRANCH" > /dev/null; then
+            echo "ref=$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=master" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          repository: CesarDanilo/Chat2Order-backend
+          ref: ${{ steps.backend.outputs.ref }}
+          path: backend
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            frontend-repo/frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Gerar segredos de teste
+        run: |
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          for name in SEED_DEV_PASSWORD SEED_DEV2_PASSWORD SEED_LOJA3_PASSWORD; do
+            value="$(openssl rand -hex 16)"
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
+
+      - name: Preparar banco e backend
+        working-directory: backend
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run db:seed
+
+      - name: Subir o backend
+        working-directory: backend
+        run: |
+          nohup npx tsx src/server.ts > "$RUNNER_TEMP/backend.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:3001/health > /dev/null && exit 0
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/backend.log"
+          exit 1
+
+      - name: Subir o frontend
+        working-directory: frontend-repo/frontend
+        env:
+          VITE_API_URL: http://127.0.0.1:3001
+        run: |
+          npm ci
+          npm run build
+          nohup npx vite preview --port 5173 --strictPort > "$RUNNER_TEMP/frontend.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:5173 > /dev/null && exit 0
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/frontend.log"
+          exit 1
+
+      - name: Instalar o navegador
+        working-directory: frontend-repo/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Testes E2E
+        working-directory: frontend-repo/frontend
+        env:
+          E2E_ADMIN_EMAIL: dev@chat2order.local
+          E2E_ADMIN_PASSWORD: ${{ env.SEED_DEV_PASSWORD }}
+          E2E_USER_EMAIL: dev2@chat2order.local
+          E2E_USER_PASSWORD: ${{ env.SEED_DEV2_PASSWORD }}
+        run: npx playwright test --trace off
+
+      - name: Logs do backend
+        if: failure()
+        run: tail -n 100 "$RUNNER_TEMP/backend.log"
