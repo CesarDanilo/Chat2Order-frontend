@@ -100,6 +100,15 @@ function ProfilePage() {
     try {
       setSaving(true);
       const updated = await userService.update(authUser.id, payload);
+
+      // Senha nova encerra todas as sessões no servidor, inclusive esta.
+      if (payload.password) {
+        toast.success("Senha alterada. Entre novamente.");
+        signOut();
+        navigate({ to: "/auth" });
+        return;
+      }
+
       setUser(updated);
       toast.success("Perfil atualizado com sucesso.");
       setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));

@@ -44,19 +44,41 @@ test.describe("login e sessão", () => {
   });
 });
 
-test.describe("sessão do usuário comum", () => {
-  test.use({ storageState: AUTH_FILE.user });
+test.describe("logout", () => {
+  test.use({ storageState: EMPTY_STATE });
 
+  // Login próprio: o logout revoga a sessão no servidor, e a sessão salva é usada por outros testes.
   test("logout encerra a sessão e bloqueia as rotas privadas", async ({ page }) => {
+    const { email, password } = credentials("user");
+
+    await page.goto("/auth");
+    await page.locator("#email").fill(email);
+    await page.locator("#password").fill(password);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(page).toHaveURL(/\/orders(\?|$)/);
+
+    const token = await page.evaluate(() => localStorage.getItem("token"));
+    const logout = page.waitForResponse((response) => response.url().endsWith("/api/auth/logout"));
+
     await page.goto("/profile");
     await page.getByRole("button", { name: "Sair" }).click();
 
     await expect(page).toHaveURL(/\/auth$/);
+    expect((await logout).status()).toBe(204);
     expect(await page.evaluate(() => localStorage.getItem("token"))).toBeNull();
 
     await page.goto("/orders");
     await expect(page).toHaveURL(/\/auth$/);
+
+    const reused = await page.request.get("http://localhost:3001/api/order", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(reused.status()).toBe(401);
   });
+});
+
+test.describe("sessão do usuário comum", () => {
+  test.use({ storageState: AUTH_FILE.user });
 
   test("não-admin é redirecionado de /users", async ({ page }) => {
     await page.goto("/users");

@@ -113,6 +113,15 @@ export function AuthProvider({
   // =========================
 
   function signOut() {
+    const current = localStorage.getItem("token");
+
+    // Encerra a sessão também no servidor. Sem rede, o token só expira no prazo normal.
+    if (current) {
+      fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${current}` },
+      }).catch(() => undefined);
+    }
 
     localStorage.removeItem("token");
 
