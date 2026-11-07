@@ -24,9 +24,7 @@ import { useOrders } from "@/hooks/queries/use-orders";
 import { useProducts } from "@/hooks/queries/use-products";
 import { formatCurrency } from "@/lib/formatters";
 
-interface CommandPaletteProps {}
-
-export function CommandPalette(_props: CommandPaletteProps) {
+export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { data: orders = [] } = useOrders();

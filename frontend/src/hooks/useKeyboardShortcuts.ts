@@ -33,7 +33,7 @@ export function useKeyboardShortcut(
 
       if (isTyping && key.length === 1 && !meta && !ctrl) return;
 
-      const keyMatch = event.key.toLowerCase() === key.toLowerCase();
+      const keyMatch = event.key?.toLowerCase() === key.toLowerCase();
       const modifierMatch =
         (!meta || event.metaKey) &&
         (!ctrl || event.ctrlKey) &&
