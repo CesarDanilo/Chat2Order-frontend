@@ -1,4 +1,4 @@
-import { readApiError } from "@/lib/api-error";
+import { apiRequest } from "@/lib/api";
 
 interface OrderItem {
   productName: string;
@@ -23,119 +23,26 @@ export interface Order {
 
 type CreateOrderDTO = Omit<Order, "id" | "createdAt">;
 
-export class OrderService {
-  private baseURL = `${import.meta.env.VITE_API_URL}/api/order`;
+const BASE = "/order";
 
-  //Create order
-  async create(data: CreateOrderDTO): Promise<Order> {
-    const token = localStorage.getItem("token");
+export const orderService = {
+  read: () => apiRequest<Order[]>(BASE, { fallbackError: "Erro ao buscar pedidos" }),
 
-    if (!token) {
-      throw new Error("Usuário não autenticado");
-    }
+  readById: (id: string) =>
+    apiRequest<Order>(`${BASE}/${id}`, { fallbackError: "Erro ao buscar pedidos" }),
 
-    const response = await fetch(this.baseURL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+  create: (data: CreateOrderDTO) =>
+    apiRequest<Order>(BASE, { method: "POST", body: data, fallbackError: "Erro ao criar pedido" }),
 
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao criar pedido");
-    }
-    const order: Order = await response.json();
-
-    return order;
-  }
-
-  //Get order
-  async read(): Promise<Order[]> {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("Usuário não autenticado");
-    }
-
-    const response = await fetch(this.baseURL, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao buscar pedidos");
-    }
-    const order: Order[] = await response.json();
-    return order;
-  }
-
-  async readById(orderId: string): Promise<Order> {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("Usuário não autenticado");
-    }
-
-    const response = await fetch(`${this.baseURL}/${orderId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao buscar pedidos");
-    }
-    const order: Order = await response.json();
-    return order;
-  }
-
-  //Update order
-  async update(orderId: string, data: CreateOrderDTO) {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("Usuário não autenticado");
-    }
-
-    const response = await fetch(`${this.baseURL}/${orderId}`, {
+  update: (id: string, data: CreateOrderDTO) =>
+    apiRequest<Order>(`${BASE}/${id}`, {
       method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+      body: data,
+      fallbackError: "Erro ao atualizar pedido",
+    }),
 
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao atualizar pedido");
-    }
-    const order: Order = await response.json();
-
-    return order;
-  }
-
-  //Delete order
-  async delete(id: string) {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("Usuário não autenticado");
-    }
-
-    const response = await fetch(`${this.baseURL}/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao deletar pedido");
-    }
-
+  delete: async (id: string) => {
+    await apiRequest(`${BASE}/${id}`, { method: "DELETE", fallbackError: "Erro ao deletar pedido" });
     return true;
-  }
-}
+  },
+};

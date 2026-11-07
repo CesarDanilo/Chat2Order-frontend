@@ -2,9 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orderKeys } from "@/lib/query-client";
 import { getErrorMessage, getGenericErrorMessage } from "@/lib/api-error";
-import { OrderService, type Order } from "@/services/orders-services";
-
-const orderService = new OrderService();
+import { isUnauthorizedError } from "@/lib/api";
+import { orderService, type Order } from "@/services/orders-services";
 
 // Campos de pedido que o OrderDrawer mostra junto ao input (itens, cliente, observação, total).
 // Os demais erros de validação vão para o toast.
@@ -28,6 +27,8 @@ export function useOrder(id: string | null, enabled: boolean) {
     queryKey: orderKeys.detail(id ?? ""),
     queryFn: () => orderService.readById(id!),
     enabled: enabled && !!id,
+    // O formulário de edição sempre parte do dado mais recente.
+    staleTime: 0,
   });
 }
 
@@ -52,7 +53,7 @@ export function useCreateOrder() {
         queryClient.setQueryData(orderKeys.all, context.previous);
       }
       const message = getGenericErrorMessage(err, "Não foi possível criar o pedido.", isOrderFieldShown);
-      if (message) toast.error(message);
+      if (message && !isUnauthorizedError(err)) toast.error(message);
     },
     onSuccess: () => toast.success("Pedido criado com sucesso."),
     onSettled: () => queryClient.invalidateQueries({ queryKey: orderKeys.all }),
@@ -79,7 +80,7 @@ export function useUpdateOrder() {
         queryClient.setQueryData(orderKeys.all, context.previous);
       }
       const message = getGenericErrorMessage(err, "Não foi possível atualizar o pedido.", isOrderFieldShown);
-      if (message) toast.error(message);
+      if (message && !isUnauthorizedError(err)) toast.error(message);
     },
     onSuccess: () => toast.success("Pedido atualizado com sucesso."),
     onSettled: () => queryClient.invalidateQueries({ queryKey: orderKeys.all }),
@@ -104,7 +105,9 @@ export function useDeleteOrder() {
       if (context?.previous) {
         queryClient.setQueryData(orderKeys.all, context.previous);
       }
-      toast.error(getErrorMessage(err, "Não foi possível excluir o pedido."));
+      if (!isUnauthorizedError(err)) {
+        toast.error(getErrorMessage(err, "Não foi possível excluir o pedido."));
+      }
     },
     onSuccess: () => toast.success("Pedido excluído."),
     onSettled: () => queryClient.invalidateQueries({ queryKey: orderKeys.all }),

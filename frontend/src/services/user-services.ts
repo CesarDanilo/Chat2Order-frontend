@@ -1,157 +1,44 @@
-import { readApiError } from "@/lib/api-error";
+import { apiRequest } from "@/lib/api";
 
 export interface User {
   id: string;
-
   name: string;
-
   email: string;
-
   password: string;
-
   admin?: boolean;
-
   createdAt: string;
 }
 
 // POST /api/user: somente name, email e password. O admin não é enviado no cadastro.
 export interface UserCreate {
   name: string;
-
   email: string;
-
   password: string;
 }
 
 // PUT /api/user/:id: password é opcional (omita se não mudou); admin só pode ser enviado por admin.
 export interface UserUpdate {
   name: string;
-
   email: string;
-
   password?: string;
-
   admin?: boolean;
 }
 
-export class UserService {
-  private baseURL = `${import.meta.env.VITE_API_URL}/api/user`;
+const BASE = "/user";
 
-  // =========================
-  // GET TOKEN
-  // =========================
+export const userService = {
+  read: () => apiRequest<User[]>(BASE, { fallbackError: "Erro ao buscar usuários" }),
 
-  private getToken() {
-    const token = localStorage.getItem("token");
+  readById: (id: string) =>
+    apiRequest<User>(`${BASE}/${id}`, { fallbackError: "Erro ao buscar usuário" }),
 
-    if (!token) {
-      throw new Error("Usuário não autenticado");
-    }
+  create: (data: UserCreate) =>
+    apiRequest<User>(BASE, { method: "POST", body: data, fallbackError: "Erro ao criar usuário" }),
 
-    return token;
-  }
-
-  // =========================
-  // GET ALL USERS
-  // =========================
-
-  async read(): Promise<User[]> {
-    const token = this.getToken();
-
-    const response = await fetch(this.baseURL, {
-      method: "GET",
-
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao buscar usuários");
-    }
-
-    const users: User[] = await response.json();
-
-    return users;
-  }
-
-  // =========================
-  // GET USER BY ID
-  // =========================
-
-  async readById(user_id: string): Promise<User> {
-    const token = this.getToken();
-
-    const response = await fetch(`${this.baseURL}/${user_id}`, {
-      method: "GET",
-
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao buscar usuário");
-    }
-
-    const user: User = await response.json();
-
-    return user;
-  }
-
-  // =========================
-  // CREATE USER
-  // =========================
-
-  async create(data: UserCreate): Promise<User> {
-    const token = this.getToken();
-
-    const response = await fetch(this.baseURL, {
-      method: "POST",
-
-      headers: {
-        Authorization: `Bearer ${token}`,
-
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao criar usuário");
-    }
-
-    const user: User = await response.json();
-
-    return user;
-  }
-
-  // =========================
-  // UPDATE USER
-  // =========================
-
-  async update(user_id: string, data: UserUpdate): Promise<User> {
-    const token = this.getToken();
-
-    const response = await fetch(`${this.baseURL}/${user_id}`, {
+  update: (id: string, data: UserUpdate) =>
+    apiRequest<User>(`${BASE}/${id}`, {
       method: "PUT",
-
-      headers: {
-        Authorization: `Bearer ${token}`,
-
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw await readApiError(response, "Erro ao atualizar usuário");
-    }
-
-    const user: User = await response.json();
-
-    return user;
-  }
-}
+      body: data,
+      fallbackError: "Erro ao atualizar usuário",
+    }),
+};

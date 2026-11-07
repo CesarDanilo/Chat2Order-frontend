@@ -1,162 +1,70 @@
-// src/context/auth-context.tsx
-
+import { createContext, useContext, useEffect, useState } from "react";
+import { queryClient } from "@/lib/query-client";
 import {
-  createContext,
-  useContext,
-  useState,
-} from "react";
-
-// =========================
-// USER TYPE
-// =========================
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  admin: boolean;
-};
-
-// =========================
-// CONTEXT TYPE
-// =========================
+  clearStoredSession,
+  getStoredToken,
+  getStoredUser,
+  onSessionExpired,
+  storeSession,
+  storeUser,
+  type SessionUser,
+} from "@/lib/session";
+import { logoutService } from "@/services/auth-services";
 
 type AuthContextType = {
   token: string | null;
-
-  user: User | null;
-
+  user: SessionUser | null;
   authenticated: boolean;
-
-  signIn: (
-    token: string,
-    user: User
-  ) => void;
-
+  signIn: (token: string, user: SessionUser) => void;
   signOut: () => void;
+  // Atualiza o usuário guardado (ex.: nome alterado no perfil).
+  updateUser: (user: SessionUser) => void;
 };
 
-// =========================
-// CONTEXT
-// =========================
+const AuthContext = createContext({} as AuthContextType);
 
-const AuthContext = createContext(
-  {} as AuthContextType
-);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [token, setToken] = useState<string | null>(getStoredToken);
+  const [user, setUser] = useState<SessionUser | null>(getStoredUser);
 
-// =========================
-// PROVIDER
-// =========================
+  // 401 em qualquer requisição: a sessão já foi apagada do navegador; aqui limpa o estado e o cache.
+  useEffect(
+    () =>
+      onSessionExpired(() => {
+        setToken(null);
+        setUser(null);
+        queryClient.clear();
+      }),
+    [],
+  );
 
-type AuthProviderProps = {
-  children: React.ReactNode;
-};
-
-export function AuthProvider({
-  children,
-}: AuthProviderProps) {
-
-  // =========================
-  // TOKEN
-  // =========================
-
-  const [token, setToken] =
-    useState<string | null>(
-      localStorage.getItem("token")
-    );
-
-  // =========================
-  // USER
-  // =========================
-
-  const [user, setUser] =
-    useState<User | null>(() => {
-      try {
-        const storage =
-          localStorage.getItem("user");
-
-        return storage
-          ? JSON.parse(storage)
-          : null;
-
-      } catch {
-        return null;
-      }
-    });
-
-  // =========================
-  // LOGIN
-  // =========================
-
-  function signIn(
-    token: string,
-    user: User
-  ) {
-
-    localStorage.setItem(
-      "token",
-      token
-    );
-
-    localStorage.setItem(
-      "user",
-      JSON.stringify(user)
-    );
-
-    setToken(token);
-
-    setUser(user);
+  function signIn(nextToken: string, nextUser: SessionUser) {
+    storeSession(nextToken, nextUser);
+    setToken(nextToken);
+    setUser(nextUser);
   }
 
-  // =========================
-  // LOGOUT
-  // =========================
-
   function signOut() {
-    const current = localStorage.getItem("token");
-
-    // Encerra a sessão também no servidor. Sem rede, o token só expira no prazo normal.
-    if (current) {
-      fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${current}` },
-      }).catch(() => undefined);
-    }
-
-    localStorage.removeItem("token");
-
-    localStorage.removeItem("user");
-
+    if (getStoredToken()) logoutService().catch(() => undefined);
+    clearStoredSession();
+    queryClient.clear();
     setToken(null);
-
     setUser(null);
   }
 
-  // =========================
-  // VALUES
-  // =========================
+  function updateUser(nextUser: SessionUser) {
+    storeUser(nextUser);
+    setUser(nextUser);
+  }
 
   return (
-
     <AuthContext.Provider
-      value={{
-        token,
-        user,
-        authenticated: !!token,
-        signIn,
-        signOut,
-      }}
+      value={{ token, user, authenticated: !!token, signIn, signOut, updateUser }}
     >
-
       {children}
-
     </AuthContext.Provider>
   );
 }
-
-// =========================
-// HOOK
-// =========================
 
 export function useAuth() {
   return useContext(AuthContext);
