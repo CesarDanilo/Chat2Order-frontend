@@ -18,11 +18,6 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
-    rules: {
-      // Pendência da E8: exigem refatorar o carregamento dos drawers. Seguem visíveis como avisos.
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/immutability': 'warn',
-    },
   },
   {
     // Rotas do TanStack, componentes shadcn e o contexto exportam mais do que componentes por natureza.
