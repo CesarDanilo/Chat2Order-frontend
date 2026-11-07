@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import z from "zod";
+import type { z } from "zod";
 import type { Product } from "@/services/products-services";
 import type { Order } from "@/services/orders-services";
+import { UNKNOWN_PHONE, orderFormSchema } from "@/lib/validation";
+import { formatPhone } from "@/lib/formatters";
 
 export interface OrderItem {
   productName: string;
@@ -9,29 +11,10 @@ export interface OrderItem {
   unitPrice: number;
 }
 
-const itemSchema = z.object({
-  productName: z.string().min(1, "O nome do produto é obrigatório"),
-  quantity: z
-    .number()
-    .int("A quantidade deve ser um número inteiro")
-    .positive("A quantidade deve ser maior que 0"),
-  unitPrice: z.number().nonnegative("O preço unitário não pode ser negativo"),
-  totalPrice: z.number().nonnegative("O total do item não pode ser negativo"),
-});
+export type OrderFormData = z.infer<typeof orderFormSchema>;
 
-export const orderSchema = z.object({
-  customerName: z.string().min(1, "O nome do cliente é obrigatório"),
-  customerPhone: z.string().min(8, "Telefone inválido"),
-  address: z.string().min(1, "O endereço é obrigatório"),
-  paymentMethod: z.enum(["PIX", "CREDIT_CARD", "DEBIT_CARD", "CASH"]),
-  total: z.number().nonnegative("O total não pode ser negativo"),
-  source: z.enum(["WHATSAPP", "SITE"]),
-  rawMessage: z.string().optional(),
-  status: z.enum(["PENDENTE", "CONCLUIDO", "CANCELADO"]),
-  items: z.array(itemSchema).min(1, "O pedido deve conter pelo menos 1 item"),
-});
-
-export type OrderFormData = z.infer<typeof orderSchema>;
+// Arredonda para 2 casas decimais (evita 0.30000000000000004 no payload).
+const roundMoney = (value: number) => Math.round(value * 100) / 100;
 
 const EMPTY_ITEM: OrderItem = {
   productName: "",
@@ -90,7 +73,12 @@ export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
 
   const loadOrder = useCallback((order: Order) => {
     setCustomerName(order.customerName);
-    setCustomerPhone(order.customerPhone);
+    // Telefone formatado para edição. O marcador de "não informado" fica como está, pois é válido.
+    setCustomerPhone(
+      order.customerPhone === UNKNOWN_PHONE
+        ? UNKNOWN_PHONE
+        : formatPhone(order.customerPhone),
+    );
     setAddress(order.address);
     setRawMessage(order.rawMessage || "");
     setStatus(order.status);
@@ -111,7 +99,10 @@ export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
   }, [initialOrder, loadOrder]);
 
   const total = useMemo(
-    () => items.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0),
+    () =>
+      roundMoney(
+        items.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0),
+      ),
     [items],
   );
 
@@ -174,7 +165,7 @@ export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
       status,
       items: normalizedItems.map((item) => ({
         ...item,
-        totalPrice: item.quantity * item.unitPrice,
+        totalPrice: roundMoney(item.quantity * item.unitPrice),
       })),
     };
   }, [
@@ -191,7 +182,7 @@ export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
 
   const validate = useCallback((): OrderFormData | null => {
     const data = buildPayload();
-    const result = orderSchema.safeParse(data);
+    const result = orderFormSchema.safeParse(data);
 
     if (!result.success) {
       setFieldErrors(mapZodErrors(result.error));
@@ -209,6 +200,11 @@ export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
       delete next[field];
       return next;
     });
+  }, []);
+
+  // Erros por campo devolvidos pela API (ex.: items.0.quantity). Campos que não existem no formulário ficam fora da tela; a mensagem geral aparece no toast.
+  const applyApiFieldErrors = useCallback((fields: Record<string, string>) => {
+    setFieldErrors(fields);
   }, []);
 
   return {
@@ -238,5 +234,6 @@ export function useOrderForm({ initialOrder }: UseOrderFormOptions = {}) {
     clearForm,
     loadOrder,
     clearFieldError,
+    applyApiFieldErrors,
   };
 }

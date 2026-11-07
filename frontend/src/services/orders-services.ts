@@ -1,3 +1,5 @@
+import { readApiError } from "@/lib/api-error";
+
 interface OrderItem {
   productName: string;
   quantity: number;
@@ -19,7 +21,7 @@ export interface Order {
   createdAt?: string;
 }
 
-type CreateOrderDTO = Omit<Order, "status">;
+type CreateOrderDTO = Omit<Order, "id" | "createdAt">;
 
 export class OrderService {
   private baseURL = `${import.meta.env.VITE_API_URL}/api/order`;
@@ -42,7 +44,7 @@ export class OrderService {
     });
 
     if (!response.ok) {
-      throw new Error("Erro ao criar pedido");
+      throw await readApiError(response, "Erro ao criar pedido");
     }
     const order: Order = await response.json();
 
@@ -64,9 +66,7 @@ export class OrderService {
       },
     });
     if (!response.ok) {
-      const error = await response.json();
-
-      throw new Error(error.message || "Erro ao buscar pedidos");
+      throw await readApiError(response, "Erro ao buscar pedidos");
     }
     const order: Order[] = await response.json();
     return order;
@@ -86,9 +86,7 @@ export class OrderService {
       },
     });
     if (!response.ok) {
-      const error = await response.json();
-
-      throw new Error(error.message || "Erro ao buscar pedidos");
+      throw await readApiError(response, "Erro ao buscar pedidos");
     }
     const order: Order = await response.json();
     return order;
@@ -112,7 +110,7 @@ export class OrderService {
     });
 
     if (!response.ok) {
-      throw new Error("Erro ao atualizar pedido");
+      throw await readApiError(response, "Erro ao atualizar pedido");
     }
     const order: Order = await response.json();
 
@@ -135,9 +133,7 @@ export class OrderService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-
-      throw new Error(error.message || "Erro ao deletar pedido");
+      throw await readApiError(response, "Erro ao deletar pedido");
     }
 
     return true;

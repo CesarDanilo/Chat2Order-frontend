@@ -1,3 +1,5 @@
+import { readApiError } from "@/lib/api-error";
+
 const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 
 type RequestOptions = RequestInit & {
@@ -21,7 +23,7 @@ export async function api(endpoint: string, options?: RequestOptions) {
   });
 
   if (!response.ok) {
-    throw new Error("Erro na requisição");
+    throw await readApiError(response);
   }
 
   return response.json();

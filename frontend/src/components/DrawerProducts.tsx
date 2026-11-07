@@ -26,6 +26,11 @@ import logo from "../public/icon.png";
 import { ProductService } from "@/services/products-services";
 import { productKeys } from "@/lib/query-client";
 import { formatCurrency } from "@/lib/formatters";
+import { LIMITS, productFormSchema, zodFieldErrors } from "@/lib/validation";
+import { getApiFieldErrors, getErrorMessage, getGenericErrorMessage } from "@/lib/api-error";
+
+// Campos mostrados junto ao input. Erros de outros campos vão para o toast.
+const PRODUCT_FIELDS = ["name", "category", "description", "price"];
 
 interface DrawerProductsProps {
   open: boolean;
@@ -53,6 +58,7 @@ export function DrawerProducts({
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const service = new ProductService();
   const queryClient = useQueryClient();
@@ -63,6 +69,7 @@ export function DrawerProducts({
     if (mode === "create") {
       setForm(EMPTY_FORM);
       setError(null);
+      setFieldErrors({});
       return;
     }
 
@@ -83,8 +90,8 @@ export function DrawerProducts({
         price: product.price,
         available: product.available,
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Erro ao buscar produto."));
     } finally {
       setLoading(false);
     }
@@ -92,26 +99,42 @@ export function DrawerProducts({
 
   function handleChange(field: keyof typeof EMPTY_FORM, value: string | number | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   }
 
   async function handleSave() {
+    // Envia só name, category, description, price e available (o schema devolve só esses campos).
+    const result = productFormSchema.safeParse(form);
+    if (!result.success) {
+      setFieldErrors(zodFieldErrors(result.error));
+      return;
+    }
+    setFieldErrors({});
+
     setLoading(true);
     setError(null);
     try {
       if (mode === "create") {
-        await service.create(form);
+        await service.create(result.data);
         toast.success("Produto criado com sucesso.");
       } else if (mode === "edit" && productId) {
-        await service.update(productId, form);
+        await service.update(productId, result.data);
         toast.success("Produto atualizado com sucesso.");
       }
       await queryClient.invalidateQueries({ queryKey: productKeys.all });
       onSuccess?.();
       onOpenChange(false);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao salvar produto.";
+      setFieldErrors(getApiFieldErrors(err));
+      // Erros de campo ficam junto ao input; o alerta só repete o que não coube em um campo.
+      const message = getGenericErrorMessage(err, "Erro ao salvar produto.", PRODUCT_FIELDS);
       setError(message);
-      toast.error(message);
+      if (message) toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -158,9 +181,14 @@ export function DrawerProducts({
                   <Label className="text-sm font-medium">Nome</Label>
                   <Input
                     placeholder="Ex. Camiseta Básica"
+                    maxLength={LIMITS.productName.max}
                     value={form.name}
                     onChange={(e) => handleChange("name", e.target.value)}
+                    aria-invalid={!!fieldErrors.name}
                   />
+                  {fieldErrors.name && (
+                    <p className="text-[10px] text-destructive">{fieldErrors.name}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -168,9 +196,14 @@ export function DrawerProducts({
                     <Label className="text-sm font-medium">Categoria</Label>
                     <Input
                       placeholder="Ex. Vestuário"
+                      maxLength={LIMITS.category.max}
                       value={form.category}
                       onChange={(e) => handleChange("category", e.target.value)}
+                      aria-invalid={!!fieldErrors.category}
                     />
+                    {fieldErrors.category && (
+                      <p className="text-[10px] text-destructive">{fieldErrors.category}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -194,9 +227,14 @@ export function DrawerProducts({
                   <Label className="text-sm font-medium">Descrição</Label>
                   <Textarea
                     placeholder="Descreva o produto..."
+                    maxLength={LIMITS.description.max}
                     value={form.description}
                     onChange={(e) => handleChange("description", e.target.value)}
+                    aria-invalid={!!fieldErrors.description}
                   />
+                  {fieldErrors.description && (
+                    <p className="text-[10px] text-destructive">{fieldErrors.description}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -210,7 +248,11 @@ export function DrawerProducts({
                     placeholder="0.00"
                     value={form.price}
                     onChange={(e) => handleChange("price", Number(e.target.value))}
+                    aria-invalid={!!fieldErrors.price}
                   />
+                  {fieldErrors.price && (
+                    <p className="text-[10px] text-destructive">{fieldErrors.price}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

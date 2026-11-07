@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { productKeys } from "@/lib/query-client";
+import { getErrorMessage } from "@/lib/api-error";
 import { ProductService, type Product } from "@/services/products-services";
 
 const productService = new ProductService();
@@ -26,11 +27,11 @@ export function useDeleteProduct() {
       );
       return { previous };
     },
-    onError: (_err, _id, context) => {
+    onError: (err, _id, context) => {
       if (context?.previous) {
         queryClient.setQueryData(productKeys.all, context.previous);
       }
-      toast.error("Não foi possível excluir o produto.");
+      toast.error(getErrorMessage(err, "Não foi possível excluir o produto."));
     },
     onSuccess: () => toast.success("Produto excluído."),
     onSettled: () => queryClient.invalidateQueries({ queryKey: productKeys.all }),

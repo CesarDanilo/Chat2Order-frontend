@@ -29,6 +29,12 @@ import { useCreateOrder, useUpdateOrder } from "@/hooks/queries/use-orders";
 import { useProducts } from "@/hooks/queries/use-products";
 import { ProductCombobox } from "@/features/products/ProductCombobox";
 import { formatCurrency } from "@/lib/formatters";
+import { getApiFieldErrors } from "@/lib/api-error";
+import {
+  LIMITS,
+  isOrderStatusTransitionAllowed,
+  type OrderStatusValue,
+} from "@/lib/validation";
 import logo from "../../public/icon.png";
 
 interface OrderDrawerProps {
@@ -37,6 +43,12 @@ interface OrderDrawerProps {
   mode: "create" | "edit";
   orderId: string | null;
 }
+
+const STATUS_OPTIONS: { value: OrderStatusValue; label: string }[] = [
+  { value: "PENDENTE", label: "Pendente" },
+  { value: "CONCLUIDO", label: "Concluído" },
+  { value: "CANCELADO", label: "Cancelado" },
+];
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -70,9 +82,12 @@ export function OrderDrawer({
     }
   }, [open, mode]);
 
+  // Após carregar o pedido, o formulário remonta: os selects começam com os valores do pedido.
+  const [formVersion, setFormVersion] = useState(0);
   useEffect(() => {
     if (loadedOrder && mode === "edit") {
       form.loadOrder(loadedOrder);
+      setFormVersion((version) => version + 1);
     }
   }, [loadedOrder, mode]);
 
@@ -106,14 +121,21 @@ export function OrderDrawer({
         });
         onOpenChange(false);
       }
-    } catch {
-      // toast handled in mutation
+    } catch (err) {
+      // Toast com a mensagem da API é feito na mutation; aqui só levamos os erros por campo.
+      form.applyApiFieldErrors(getApiFieldErrors(err));
     } finally {
       setSubmitting(false);
     }
   }
 
   const isBusy = submitting || createOrder.isPending || updateOrder.isPending;
+
+  // Edição: só o status atual e as transições permitidas. Criação: CANCELADO não é oferecido.
+  const currentStatus = mode === "edit" ? loadedOrder?.status : undefined;
+  const statusOptions = STATUS_OPTIONS.filter(
+    (option) => mode === "edit" || option.value !== "CANCELADO",
+  );
 
   return (
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
@@ -139,6 +161,8 @@ export function OrderDrawer({
           </div>
         ) : (
           <form
+            key={formVersion}
+            noValidate
             onSubmit={handleSubmit}
             className="flex min-h-0 flex-1 flex-col"
           >
@@ -155,6 +179,8 @@ export function OrderDrawer({
                     ref={customerNameRef}
                     id="customerName"
                     placeholder="Ex. João Silva"
+                    maxLength={LIMITS.customerName.max}
+                    aria-invalid={!!form.fieldErrors.customerName}
                     value={form.customerName}
                     onChange={(e) => {
                       form.setCustomerName(e.target.value);
@@ -172,7 +198,9 @@ export function OrderDrawer({
                     </Label>
                     <Input
                       id="customerPhone"
-                      placeholder="+55 67 999999999"
+                      placeholder="(11) 91234-5678"
+                      maxLength={LIMITS.phone.max}
+                      aria-invalid={!!form.fieldErrors.customerPhone}
                       value={form.customerPhone}
                       onChange={(e) => {
                         form.setCustomerPhone(e.target.value);
@@ -208,6 +236,8 @@ export function OrderDrawer({
                   <Textarea
                     id="address"
                     placeholder="Rua, número, bairro, cidade"
+                    maxLength={LIMITS.address.max}
+                    aria-invalid={!!form.fieldErrors.address}
                     value={form.address}
                     onChange={(e) => {
                       form.setAddress(e.target.value);
@@ -257,9 +287,18 @@ export function OrderDrawer({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PENDENTE">Pendente</SelectItem>
-                      <SelectItem value="CONCLUIDO">Concluído</SelectItem>
-                      <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                      {statusOptions.map((option) => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          disabled={
+                            currentStatus !== undefined &&
+                            !isOrderStatusTransitionAllowed(currentStatus, option.value)
+                          }
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -303,6 +342,8 @@ export function OrderDrawer({
                       <div className="col-span-5 space-y-1">
                         <Input
                           placeholder="Produto"
+                          maxLength={LIMITS.itemName.max}
+                          aria-invalid={!!form.fieldErrors[`items.${index}.productName`]}
                           value={item.productName}
                           onChange={(e) =>
                             form.updateItem(index, "productName", e.target.value)
@@ -317,11 +358,15 @@ export function OrderDrawer({
                         <Input
                           type="number"
                           min={1}
+                          aria-invalid={!!form.fieldErrors[`items.${index}.quantity`]}
                           value={item.quantity}
                           onChange={(e) =>
                             form.updateItem(index, "quantity", Number(e.target.value))
                           }
                           className="h-7 text-xs tabular-nums"
+                        />
+                        <FieldError
+                          message={form.fieldErrors[`items.${index}.quantity`]}
                         />
                       </div>
                       <div className="col-span-3 space-y-1">
@@ -329,11 +374,15 @@ export function OrderDrawer({
                           type="number"
                           min={0}
                           step="0.01"
+                          aria-invalid={!!form.fieldErrors[`items.${index}.unitPrice`]}
                           value={item.unitPrice}
                           onChange={(e) =>
                             form.updateItem(index, "unitPrice", Number(e.target.value))
                           }
                           className="h-7 text-xs tabular-nums"
+                        />
+                        <FieldError
+                          message={form.fieldErrors[`items.${index}.unitPrice`]}
                         />
                       </div>
                       <div className="col-span-2 flex items-start justify-end">
@@ -360,17 +409,26 @@ export function OrderDrawer({
                 <Textarea
                   id="rawMessage"
                   placeholder="Cole aqui a conversa do cliente..."
+                  maxLength={LIMITS.rawMessage.max}
+                  aria-invalid={!!form.fieldErrors.rawMessage}
                   value={form.rawMessage}
-                  onChange={(e) => form.setRawMessage(e.target.value)}
+                  onChange={(e) => {
+                    form.setRawMessage(e.target.value);
+                    form.clearFieldError("rawMessage");
+                  }}
                   className="min-h-24 text-xs"
                 />
+                <FieldError message={form.fieldErrors.rawMessage} />
               </section>
 
-              <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
-                <span className="text-xs font-medium">Total</span>
-                <span className="text-base font-semibold tabular-nums">
-                  {formatCurrency(form.total)}
-                </span>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
+                  <span className="text-xs font-medium">Total</span>
+                  <span className="text-base font-semibold tabular-nums">
+                    {formatCurrency(form.total)}
+                  </span>
+                </div>
+                <FieldError message={form.fieldErrors.total} />
               </div>
             </div>
 

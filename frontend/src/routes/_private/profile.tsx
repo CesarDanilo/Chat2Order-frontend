@@ -17,13 +17,18 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/auth-context";
 import { useEffect, useState } from "react";
-import { UserService, type User } from "@/services/user-services";
+import { UserService, type User, type UserUpdate } from "@/services/user-services";
+import { LIMITS, profileSchema, zodFieldErrors } from "@/lib/validation";
+import { getApiFieldErrors, getGenericErrorMessage } from "@/lib/api-error";
 
 export const Route = createFileRoute("/_private/profile")({
   component: ProfilePage,
 });
 
 const userService = new UserService();
+
+// Campos mostrados junto ao input. Erros de outros campos vão para o toast.
+const PROFILE_FIELDS = ["name", "email", "password", "confirmPassword"];
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -38,6 +43,7 @@ function ProfilePage() {
     password: "",
     confirmPassword: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!authUser?.id) return;
@@ -64,21 +70,32 @@ function ProfilePage() {
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   }
 
   async function handleSave() {
     if (!authUser?.id) return;
 
-    if (form.password && form.password !== form.confirmPassword) {
-      toast.error("As senhas não coincidem.");
+    const result = profileSchema.safeParse(form);
+    if (!result.success) {
+      setFieldErrors(zodFieldErrors(result.error));
       return;
     }
+    setFieldErrors({});
 
-    const payload = {
-      name: form.name,
-      email: form.email,
-      password: form.password,
+    // Sem admin e sem confirmPassword. Senha vazia não é enviada.
+    const payload: UserUpdate = {
+      name: result.data.name,
+      email: result.data.email,
     };
+    if (result.data.password !== "") {
+      payload.password = result.data.password;
+    }
 
     try {
       setSaving(true);
@@ -87,8 +104,9 @@ function ProfilePage() {
       toast.success("Perfil atualizado com sucesso.");
       setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao salvar.";
-      toast.error(message);
+      setFieldErrors(getApiFieldErrors(err));
+      const message = getGenericErrorMessage(err, "Erro ao salvar.", PROFILE_FIELDS);
+      if (message) toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -164,10 +182,10 @@ function ProfilePage() {
           <CardContent className="p-4">
             <h3 className="text-xs font-semibold">Informações da conta</h3>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Field label="Nome completo" name="name" value={form.name} onChange={handleChange} />
-              <Field label="E-mail" name="email" type="email" value={form.email} onChange={handleChange} />
-              <Field label="Nova senha" name="password" type="password" value={form.password} onChange={handleChange} />
-              <Field label="Confirmar senha" name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} />
+              <Field label="Nome completo" name="name" maxLength={LIMITS.name.max} value={form.name} onChange={handleChange} error={fieldErrors.name} />
+              <Field label="E-mail" name="email" type="email" maxLength={LIMITS.email.max} value={form.email} onChange={handleChange} error={fieldErrors.email} />
+              <Field label="Nova senha" name="password" type="password" maxLength={LIMITS.password.maxBytes} value={form.password} onChange={handleChange} error={fieldErrors.password} />
+              <Field label="Confirmar senha" name="confirmPassword" type="password" maxLength={LIMITS.password.maxBytes} value={form.confirmPassword} onChange={handleChange} error={fieldErrors.confirmPassword} />
             </div>
             <div className="mt-4 flex justify-end">
               <Button size="sm" className="h-8 text-xs" onClick={handleSave} disabled={saving}>
@@ -185,21 +203,35 @@ function Field({
   label,
   name,
   type = "text",
+  maxLength,
   value,
   onChange,
+  error,
 }: {
   label: string;
   name: string;
   type?: string;
+  maxLength?: number;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
 }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={name} className="text-xs">
         {label}
       </Label>
-      <Input id={name} name={name} type={type} value={value} onChange={onChange} className="h-8 text-xs" />
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        maxLength={maxLength}
+        value={value}
+        onChange={onChange}
+        aria-invalid={!!error}
+        className="h-8 text-xs"
+      />
+      {error && <p className="text-[10px] text-destructive">{error}</p>}
     </div>
   );
 }

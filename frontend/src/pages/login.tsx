@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { z } from "zod";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth-context";
@@ -9,27 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import icon from "../public/icon.png";
 import { loginService, registerService } from "@/services/auth-services";
+import { LIMITS, loginSchema, registerSchema, zodFieldErrors } from "@/lib/validation";
+import { getApiFieldErrors, getGenericErrorMessage } from "@/lib/api-error";
 
-const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres"),
-});
+type FieldErrors = Record<string, string>;
 
-const registerSchema = z
-  .object({
-    name: z.string().min(3, "O nome deve ter no mínimo 3 caracteres"),
-    email: z.string().email("Email inválido"),
-    password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres"),
-    confirmPassword: z.string().min(8),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "As senhas não coincidem",
-    path: ["confirmPassword"],
-  });
+// Campos que este formulário mostra junto ao campo. O restante vai para o toast.
+const LOGIN_FIELDS = ["email", "password"];
+const REGISTER_FIELDS = ["name", "email", "password", "confirmPassword"];
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="text-[10px] text-destructive">{message}</p>;
+}
+
+function withoutKey(errors: FieldErrors, field: string): FieldErrors {
+  if (!errors[field]) return errors;
+  const next = { ...errors };
+  delete next[field];
+  return next;
 }
 
 export function Login() {
@@ -42,26 +39,32 @@ export function Login() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
-  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  function clearError(field: string) {
+    setFieldErrors((prev) => withoutKey(prev, field));
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setFieldError(null);
 
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
-      setFieldError(result.error.issues[0].message);
+      setFieldErrors(zodFieldErrors(result.error));
       return;
     }
+    setFieldErrors({});
 
     try {
       setLoading(true);
-      const response = await loginService({ email, password });
+      const response = await loginService(result.data);
       if (!response?.token) throw new Error("Token não encontrado");
       signIn(response.token, response.user);
       navigate({ to: "/" });
-    } catch {
-      toast.error("Erro ao realizar login");
+    } catch (err) {
+      setFieldErrors(getApiFieldErrors(err));
+      const message = getGenericErrorMessage(err, "Erro ao realizar login", LOGIN_FIELDS);
+      if (message) toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -69,7 +72,6 @@ export function Login() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    setFieldError(null);
 
     const result = registerSchema.safeParse({
       name,
@@ -78,21 +80,30 @@ export function Login() {
       confirmPassword,
     });
     if (!result.success) {
-      setFieldError(result.error.issues[0].message);
+      setFieldErrors(zodFieldErrors(result.error));
       return;
     }
+    setFieldErrors({});
 
     try {
       setLoading(true);
-      await registerService({ name, email, password });
+      // confirmPassword é só da tela: não vai para a API.
+      await registerService({
+        name: result.data.name,
+        email: result.data.email,
+        password: result.data.password,
+      });
       toast.success("Cadastro realizado com sucesso");
       setCreateAccount(false);
       setName("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-    } catch {
-      toast.error("Erro ao realizar cadastro");
+      setFieldErrors({});
+    } catch (err) {
+      setFieldErrors(getApiFieldErrors(err));
+      const message = getGenericErrorMessage(err, "Erro ao realizar cadastro", REGISTER_FIELDS);
+      if (message) toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -115,6 +126,7 @@ export function Login() {
           </div>
 
           <form
+            noValidate
             onSubmit={createAccount ? handleRegister : handleLogin}
             className="flex flex-col gap-3"
           >
@@ -126,11 +138,17 @@ export function Login() {
                 id="email"
                 type="email"
                 placeholder="Digite seu email"
+                maxLength={LIMITS.email.max}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearError("email");
+                }}
+                aria-invalid={!!fieldErrors.email}
                 className="h-9 text-sm"
                 autoFocus
               />
+              <FieldError message={fieldErrors.email} />
             </div>
 
             {createAccount && (
@@ -140,10 +158,16 @@ export function Login() {
                 </Label>
                 <Input
                   id="name"
+                  maxLength={LIMITS.name.max}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    clearError("name");
+                  }}
+                  aria-invalid={!!fieldErrors.name}
                   className="h-9 text-sm"
                 />
+                <FieldError message={fieldErrors.name} />
               </div>
             )}
 
@@ -154,10 +178,16 @@ export function Login() {
               <Input
                 id="password"
                 type="password"
+                maxLength={createAccount ? LIMITS.password.maxBytes : undefined}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearError("password");
+                }}
+                aria-invalid={!!fieldErrors.password}
                 className="h-9 text-sm"
               />
+              <FieldError message={fieldErrors.password} />
             </div>
 
             {createAccount && (
@@ -168,14 +198,18 @@ export function Login() {
                 <Input
                   id="confirmPassword"
                   type="password"
+                  maxLength={LIMITS.password.maxBytes}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    clearError("confirmPassword");
+                  }}
+                  aria-invalid={!!fieldErrors.confirmPassword}
                   className="h-9 text-sm"
                 />
+                <FieldError message={fieldErrors.confirmPassword} />
               </div>
             )}
-
-            <FieldError message={fieldError ?? undefined} />
 
             <Button type="submit" disabled={loading} className="h-9 w-full text-sm">
               {loading
@@ -192,7 +226,7 @@ export function Login() {
               className="text-xs text-muted-foreground hover:text-foreground"
               onClick={() => {
                 setCreateAccount(!createAccount);
-                setFieldError(null);
+                setFieldErrors({});
               }}
             >
               {createAccount ? "Já tenho uma conta" : "Criar conta"}

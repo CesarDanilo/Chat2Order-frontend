@@ -37,10 +37,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldCheck, User2 } from "lucide-react";
 
 // Services
-import { UserService } from "@/services/user-services";
+import { UserService, type UserUpdate } from "@/services/user-services";
 
 // Validation
-import z from "zod";
+import { LIMITS, userCreateSchema, userUpdateSchema, zodFieldErrors } from "@/lib/validation";
+import { getApiFieldErrors, getErrorMessage, getGenericErrorMessage } from "@/lib/api-error";
 
 // Logo
 import logo from "../public/icon.png";
@@ -50,6 +51,11 @@ import logo from "../public/icon.png";
 // =========================
 
 type AlertType = "success" | "error";
+
+type FieldErrors = Record<string, string>;
+
+// Campos mostrados junto ao input. Erros de outros campos vão para o alerta.
+const USER_FIELDS = ["name", "email", "password"];
 
 interface DrawerUsersProps {
   open: boolean;
@@ -64,18 +70,15 @@ interface DrawerUsersProps {
 }
 
 // =========================
-// SCHEMA
+// HELPERS
 // =========================
 
-const userSchema = z.object({
-  name: z.string().min(3, "O nome é obrigatório"),
-
-  email: z.email("E-mail inválido"),
-
-  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
-
-  admin: z.boolean(),
-});
+function withoutKey(errors: FieldErrors, field: string): FieldErrors {
+  if (!errors[field]) return errors;
+  const next = { ...errors };
+  delete next[field];
+  return next;
+}
 
 // =========================
 // COMPONENT
@@ -95,6 +98,10 @@ export function DrawerUsers({
   const [password, setPassword] = useState("");
 
   const [admin, setAdmin] = useState(false);
+
+  const [saving, setSaving] = useState(false);
+
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const [alert, setAlert] = useState<{
     show: boolean;
@@ -135,6 +142,12 @@ export function DrawerUsers({
     setPassword("");
 
     setAdmin(false);
+
+    setFieldErrors({});
+  }
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => withoutKey(prev, field));
   }
 
   // =========================
@@ -169,8 +182,13 @@ export function DrawerUsers({
 
       setEmail(user.email);
 
+      // Na edição a senha é opcional: começa vazia e só é enviada se preenchida.
+      setPassword("");
+
       setAdmin(user.admin ?? false);
-    } catch (error) {
+
+      setFieldErrors({});
+    } catch {
       setAlert({
         show: true,
         type: "error",
@@ -184,31 +202,48 @@ export function DrawerUsers({
   // =========================
 
   async function createUser() {
+    // Validação no cliente só para UX; o backend valida de novo.
+    const result = userCreateSchema.safeParse({ name, email, password });
+
+    if (!result.success) {
+      setFieldErrors(zodFieldErrors(result.error));
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
+      setSaving(true);
+
       const userService = new UserService();
 
-      const data = {
-        name,
-        email,
-        password,
-        admin,
-      };
+      // POST sem `admin`: o backend recusa o campo na criação.
+      const created = await userService.create(result.data);
 
-      const result = userSchema.safeParse(data);
+      if (admin) {
+        try {
+          await userService.update(created.id, {
+            name: result.data.name,
+            email: result.data.email,
+            admin: true,
+          });
+        } catch (err) {
+          await refreshUsers();
 
-      if (!result.success) {
-        const firstError = result.error.issues[0];
+          setAlert({
+            show: true,
+            type: "error",
+            message: `Usuário criado, mas não foi possível definir como admin. ${getErrorMessage(
+              err,
+              "Edite o usuário para tentar novamente.",
+            )}`,
+          });
 
-        setAlert({
-          show: true,
-          type: "error",
-          message: firstError.message,
-        });
+          onOpenChange(false);
 
-        return;
+          return;
+        }
       }
-
-      await userService.create(data);
 
       await refreshUsers();
 
@@ -221,12 +256,15 @@ export function DrawerUsers({
       });
 
       onOpenChange(false);
-    } catch (error) {
-      setAlert({
-        show: true,
-        type: "error",
-        message: "Não foi possível criar o usuário.",
-      });
+    } catch (err) {
+      setFieldErrors(getApiFieldErrors(err));
+
+      const message = getGenericErrorMessage(err, "Não foi possível criar o usuário.", USER_FIELDS);
+      if (message) {
+        setAlert({ show: true, type: "error", message });
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -235,33 +273,34 @@ export function DrawerUsers({
   // =========================
 
   async function updateUser() {
+    if (!userId) return;
+
+    const result = userUpdateSchema.safeParse({ name, email, password, admin });
+
+    if (!result.success) {
+      setFieldErrors(zodFieldErrors(result.error));
+      return;
+    }
+
+    setFieldErrors({});
+
+    // Senha vazia não é enviada (significa "não alterar").
+    const payload: UserUpdate = {
+      name: result.data.name,
+      email: result.data.email,
+      admin: result.data.admin,
+    };
+
+    if (result.data.password !== "") {
+      payload.password = result.data.password;
+    }
+
     try {
-      if (!userId) return;
+      setSaving(true);
 
       const userService = new UserService();
 
-      const data = {
-        name,
-        email,
-        password,
-        admin,
-      };
-
-      const result = userSchema.safeParse(data);
-
-      if (!result.success) {
-        const firstError = result.error.issues[0];
-
-        setAlert({
-          show: true,
-          type: "error",
-          message: firstError.message,
-        });
-
-        return;
-      }
-
-      await userService.update(userId, data);
+      await userService.update(userId, payload);
 
       await refreshUsers();
 
@@ -272,12 +311,15 @@ export function DrawerUsers({
       });
 
       onOpenChange(false);
-    } catch (error) {
-      setAlert({
-        show: true,
-        type: "error",
-        message: "Não foi possível atualizar o usuário.",
-      });
+    } catch (err) {
+      setFieldErrors(getApiFieldErrors(err));
+
+      const message = getGenericErrorMessage(err, "Não foi possível atualizar o usuário.", USER_FIELDS);
+      if (message) {
+        setAlert({ show: true, type: "error", message });
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -350,11 +392,20 @@ export function DrawerUsers({
 
                   <Input
                     placeholder="Ex. César Danilo"
+                    maxLength={LIMITS.name.max}
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      clearFieldError("name");
+                    }}
+                    aria-invalid={!!fieldErrors.name}
                     className="pl-9"
                   />
                 </div>
+
+                {fieldErrors.name && (
+                  <p className="text-[10px] text-destructive">{fieldErrors.name}</p>
+                )}
               </div>
 
               {/* EMAIL */}
@@ -364,9 +415,18 @@ export function DrawerUsers({
                 <Input
                   type="email"
                   placeholder="usuario@email.com"
+                  maxLength={LIMITS.email.max}
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearFieldError("email");
+                  }}
+                  aria-invalid={!!fieldErrors.email}
                 />
+
+                {fieldErrors.email && (
+                  <p className="text-[10px] text-destructive">{fieldErrors.email}</p>
+                )}
               </div>
 
               {/* PASSWORD */}
@@ -376,9 +436,24 @@ export function DrawerUsers({
                 <Input
                   type="password"
                   placeholder="********"
+                  maxLength={LIMITS.password.maxBytes}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearFieldError("password");
+                  }}
+                  aria-invalid={!!fieldErrors.password}
                 />
+
+                {fieldErrors.password ? (
+                  <p className="text-[10px] text-destructive">{fieldErrors.password}</p>
+                ) : (
+                  mode === "edit" && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Deixe em branco para manter a senha atual.
+                    </p>
+                  )
+                )}
               </div>
 
               {/* ADMIN */}
@@ -411,9 +486,13 @@ export function DrawerUsers({
 
         <DrawerFooter className="border-t">
           {mode === "create" ? (
-            <Button onClick={createUser}>Salvar Usuário</Button>
+            <Button onClick={createUser} disabled={saving}>
+              Salvar Usuário
+            </Button>
           ) : (
-            <Button onClick={updateUser}>Salvar Alterações</Button>
+            <Button onClick={updateUser} disabled={saving}>
+              Salvar Alterações
+            </Button>
           )}
 
           <DrawerClose asChild>

@@ -1,3 +1,5 @@
+import { readApiError } from "@/lib/api-error";
+
 export interface User {
   id: string;
 
@@ -12,12 +14,22 @@ export interface User {
   createdAt: string;
 }
 
+// POST /api/user: somente name, email e password. O admin não é enviado no cadastro.
 export interface UserCreate {
   name: string;
 
   email: string;
 
   password: string;
+}
+
+// PUT /api/user/:id: password é opcional (omita se não mudou); admin só pode ser enviado por admin.
+export interface UserUpdate {
+  name: string;
+
+  email: string;
+
+  password?: string;
 
   admin?: boolean;
 }
@@ -55,9 +67,7 @@ export class UserService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-
-      throw new Error(error.message || "Erro ao buscar usuários");
+      throw await readApiError(response, "Erro ao buscar usuários");
     }
 
     const users: User[] = await response.json();
@@ -81,9 +91,7 @@ export class UserService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-
-      throw new Error(error.message || "Erro ao buscar usuário");
+      throw await readApiError(response, "Erro ao buscar usuário");
     }
 
     const user: User = await response.json();
@@ -111,9 +119,7 @@ export class UserService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-
-      throw new Error(error.message || "Erro ao criar usuário");
+      throw await readApiError(response, "Erro ao criar usuário");
     }
 
     const user: User = await response.json();
@@ -125,7 +131,7 @@ export class UserService {
   // UPDATE USER
   // =========================
 
-  async update(user_id: string, data: UserCreate): Promise<User> {
+  async update(user_id: string, data: UserUpdate): Promise<User> {
     const token = this.getToken();
 
     const response = await fetch(`${this.baseURL}/${user_id}`, {
@@ -141,9 +147,7 @@ export class UserService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-
-      throw new Error(error.message || "Erro ao atualizar usuário");
+      throw await readApiError(response, "Erro ao atualizar usuário");
     }
 
     const user: User = await response.json();

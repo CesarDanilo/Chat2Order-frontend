@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CirclePlus, Search, ShieldCheck, User } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
@@ -26,7 +26,18 @@ interface IUser {
   admin: boolean;
 }
 
+function isStoredUserAdmin() {
+  try {
+    return JSON.parse(localStorage.getItem("user") ?? "{}").admin === true;
+  } catch {
+    return false;
+  }
+}
+
 export const Route = createFileRoute("/_private/users")({
+  beforeLoad: () => {
+    if (!isStoredUserAdmin()) throw redirect({ to: "/dashboard" });
+  },
   component: UsersPage,
 });
 
@@ -95,6 +106,7 @@ function UsersPage() {
           <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar usuário..."
+            maxLength={100}
             className="h-8 pl-8 text-xs"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

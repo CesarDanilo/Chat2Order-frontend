@@ -1,3 +1,5 @@
+import { readApiError } from "@/lib/api-error";
+
 export interface Product {
     id?: string;
     name: string;
@@ -27,8 +29,7 @@ export class ProductService {
             },
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Erro ao buscar produtos");
+            throw await readApiError(response, "Erro ao buscar produtos");
         }
         const product: Product[] = await response.json();
         return product;
@@ -47,8 +48,7 @@ export class ProductService {
             },
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Erro ao buscar produtos");
+            throw await readApiError(response, "Erro ao buscar produtos");
         }
         const product: Product = await response.json();
         return product;
@@ -69,8 +69,7 @@ export class ProductService {
             body: JSON.stringify(data),
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Erro ao criar produto");
+            throw await readApiError(response, "Erro ao criar produto");
         }
         const product: Product = await response.json();
         return product;
@@ -91,8 +90,7 @@ export class ProductService {
             body: JSON.stringify(data),
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Erro ao atualizar produto");
+            throw await readApiError(response, "Erro ao atualizar produto");
         }
         const product: Product = await response.json();
         return product;
@@ -112,8 +110,7 @@ export class ProductService {
             },
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Erro ao deletar o produto");
+            throw await readApiError(response, "Erro ao deletar o produto");
         }
         const product: Product = await response.json();
         return product;

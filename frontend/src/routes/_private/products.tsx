@@ -95,6 +95,7 @@ function ProductsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome ou categoria"
+              maxLength={100}
               className="text-xs"
             />
             <InputGroupAddon>

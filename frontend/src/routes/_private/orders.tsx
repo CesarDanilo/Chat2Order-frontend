@@ -97,6 +97,7 @@ function OrdersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por cliente ou ID"
+              maxLength={100}
               className="text-xs"
             />
             <InputGroupAddon>
